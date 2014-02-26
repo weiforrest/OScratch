@@ -39,11 +39,20 @@ LABEL_START:
 		mov ds, ax
 		mov es, ax
 		mov sp, BOOT_SEG
+		mov ax, 0xb800			
+		mov gs, ax
+		xor di, di				;di alway point cursor 
+;;; set the vag mode, clean scren
+ 		mov ax, 0x3
+ 		int 0x10
 
+		mov bx, 0
+		call DispStr			;display hello
 ;;; reset the floppy
 		xor ah, ah
 		xor dl, dl
 		int 0x13
+
 ;;; begin to load
 SectorNoOfRootDirectory		equ		19 ;first Sector number of RootDir
 		mov word [wReadSectorNo], SectorNoOfRootDirectory
@@ -86,17 +95,13 @@ LABEL_DIFFER_NAME:
 		jz LABEL_BEGIN_SEARCH_ROOT_DIR
 		jmp LABEL_LOOP_SECTOR
 LABEL_NOFOUND_LOADER:
-
+		mov bx, 2
+		call DispStr
 		jmp $
 LABEL_FOUND_LOADER:
-		
+		mov bx, 1
 		call DispStr
-		;; and di, 0xffe0
-		;; add di, 0x1A
 		jmp $
-
-
-		
 		
 ;;; input:
 ;;; 	ax: sector number
@@ -107,7 +112,7 @@ ReadSector:
 		mov bp, sp
 		push dx
 		
-		sub esp, 2
+		sub sp, 2
 		mov byte [bp - 2], cl
 		
 		push bx					;save the destination
@@ -134,19 +139,61 @@ ReadSector:
 		ret
 
 DispStr:
-		mov ax, BootMessage
-		mov bp,	ax				;; es:bp is the address of bootmessage 
-		mov cx, 30 				;; the bootmessage length
-		mov ax, 01301h
-		mov bx, 000ch
-		mov dl, 0				;; call the interrupt
-		int 10h
+		push si
+		push ax
+		push di
+		mov ax, 2				;the table entry size
+		mul bl					;get offset of string
+		mov si, StringTable
+		add si, ax	
+		mov ax, [si]			;get absolute address
+		mov si, ax				;es:si -> string
+		mov di, word [CursorPosition]
+		cli
+.loop:
+		lodsb
+		cmp al, 0
+		jz .done
+		mov ah, 0xc				;red letter, black backgroud
+		mov [gs:di], ax
+		add di, 2
+		jmp .loop
+.done:
+		mov word [CursorPosition], di
+		call DispReturn
+		pop di
+		pop ax
+		pop si
+		ret
+
+DispReturn:
+		push ax
+		push bx
+		mov bl, 160
+		mov ax, word [CursorPosition]
+		div bl
+		and ax, 0xff
+		inc ax
+		mov bl, 160
+		mul bl
+		mov word [CursorPosition], ax
+		pop bx
+		pop ax
 		ret
 		
+		
+		
 ;;; DATA
-BootMessage:	db	"Hello, My World is begining..."
-LoaderName:		db	"LOADER  BIN" ; size must be 11
+StringTable:	dw	BootMessage
+				dw	FoundMessage
+				dw	NotFoundMessage
+
+BootMessage:	db	"Hello, My World is begining...",0
+FoundMessage:	db	"Loading",0
+NotFoundMessage:db	"Not Found Load.bin",0
+LoaderName:		db	"LOAD    BIN" ; size must be 11
 wReadSectorNo	dw	0
+CursorPosition	dw	0
 RootDirSectors	equ 14			;BPB_RsvdSecCnt * 32(entry size) / 512
 wRootDirReadDone dw	RootDirSectors
 		times 510-($-$$)	db 0
