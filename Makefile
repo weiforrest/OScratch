@@ -3,7 +3,7 @@
 #################################
 
 # Programs
-ASM			= nasm
+ASM		= nasm
 DASM		= ndisasm
 #FLAGS
 ASMFLAGS	= -I Include/ -o
@@ -32,6 +32,7 @@ bulidimg:
 	rm -rf $(IMGNAME)
 	bximage -q -fd -size=1.44 $(IMGNAME) 
 	dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
+	@mkdir -p $(TMPDIR) #test -d $(TMPDIR) || mkdir $(TMPDIR)
 	mount -o loop $(IMGNAME) $(TMPDIR)
 	@cp $(LOAD) $(TMPDIR) -v
 	@sleep 1

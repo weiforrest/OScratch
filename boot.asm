@@ -101,7 +101,60 @@ LABEL_NOFOUND_LOADER:
 LABEL_FOUND_LOADER:
 		mov bx, 1
 		call DispStr
-		jmp $
+;;; begin to load the load.bin 
+		and di, 0xffe0
+		add di, 0x1A
+SectorNoOfFAT1 equ 1				;the first sector of FAT1
+		mov ax, BaseOfLoader		
+		mov es, ax
+		mov ax, word [di] 			;begin FATEntry of load.bin
+		mov di, OffSetOfLoader		;load.bin to BaseOfLoader:OffsetOfLoader
+LABEL_GOON_LOAD:		
+		call GetFATEntry			;ax return the next FATEntry
+		test ax, 0xfff
+		jz LABEL_LOADED_BIN
+		add ax, (RootDirSectors + SectorNoOfRootDirectory - 2)
+		mov cx, 1
+		mov bx, di
+		call ReadSector
+		add di, 512
+		jmp LABEL_GOON_LOAD
+LABEL_LOADED_BIN:		
+		jmp BaseOfLoader:OffsetOfLoader 
+	
+
+;;; input:
+;;; 	ax:FATEntry number
+GetFATEntry:
+		push bp
+		mov bp, sp
+		
+		push es
+		sub sp ,2
+		mov word [bp - 2], ax	;save the FATEntry number
+		mov ax, BaseOfLoader
+		sub ax, 0x100
+		mov es, ax
+		mov bx, OffsetOfLoader		;read FAT1 to BaseOfLoad-0x100:0, maximun size is 4k
+		mov ax, word [bp - 2]
+		
+		shr ax, 9				; ax = ax / 512 (1 << 9)
+		push ax
+		add ax,SectorNoOfFAT1 
+		mov cx, 2				;handle the FATEntry crossover two sector
+		call ReadSector			;read the sector 
+
+		mov ax, word [bp - 2]
+		test ax, 1
+		jz
+		shr ax, 1
+		mov dl, 3
+		mul dl
+		
+
+		pop dx
+		pop bp
+		ret
 		
 ;;; input:
 ;;; 	ax: sector number
@@ -140,7 +193,6 @@ ReadSector:
 
 DispStr:
 		push si
-		push ax
 		push di
 		mov ax, 2				;the table entry size
 		mul bl					;get offset of string
@@ -162,12 +214,10 @@ DispStr:
 		mov word [CursorPosition], di
 		call DispReturn
 		pop di
-		pop ax
 		pop si
 		ret
 
 DispReturn:
-		push ax
 		push bx
 		mov bl, 160
 		mov ax, word [CursorPosition]
@@ -178,11 +228,9 @@ DispReturn:
 		mul bl
 		mov word [CursorPosition], ax
 		pop bx
-		pop ax
 		ret
 		
-		
-		
+
 ;;; DATA
 StringTable:	dw	BootMessage
 				dw	FoundMessage
