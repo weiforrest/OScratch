@@ -107,17 +107,20 @@ LABEL_FOUND_LOADER:
 SectorNoOfFAT1 equ 1				;the first sector of FAT1
 		mov ax, BaseOfLoader		
 		mov es, ax
-		mov ax, word [di] 			;begin FATEntry of load.bin
-		mov di, OffSetOfLoader		;load.bin to BaseOfLoader:OffsetOfLoader
-LABEL_GOON_LOAD:		
-		call GetFATEntry			;ax return the next FATEntry
-		test ax, 0xfff
-		jz LABEL_LOADED_BIN
-		add ax, (RootDirSectors + SectorNoOfRootDirectory - 2)
+		mov ax, word [es:di] 			;begin FATEntry of load.bin
+		mov di, OffsetOfLoader		;load.bin to BaseOfLoader:OffsetOfLoader
+		xor dx, dx
+LABEL_GOON_LOAD:
 		mov cx, 1
+		push ax						;save the FATEntry
 		mov bx, di
+		add ax, (RootDirSectors + SectorNoOfRootDirectory - 2)
 		call ReadSector
 		add di, 512
+		pop ax
+		call GetFATEntry			;ax return the next FATEntry
+		cmp ax, 0xfff
+		jz LABEL_LOADED_BIN
 		jmp LABEL_GOON_LOAD
 LABEL_LOADED_BIN:		
 		jmp BaseOfLoader:OffsetOfLoader 
@@ -128,31 +131,45 @@ LABEL_LOADED_BIN:
 GetFATEntry:
 		push bp
 		mov bp, sp
-		
-		push es
-		sub sp ,2
+		sub sp, 2
 		mov word [bp - 2], ax	;save the FATEntry number
+		push es
 		mov ax, BaseOfLoader
 		sub ax, 0x100
 		mov es, ax
-		mov bx, OffsetOfLoader		;read FAT1 to BaseOfLoad-0x100:0, maximun size is 4k
+		mov bx, OffsetOfLoader		;read FAT1 to BaseOfLoad-0x100:0x100, maximun size is 4k
 		mov ax, word [bp - 2]
-		
-		shr ax, 9				; ax = ax / 512 (1 << 9)
-		push ax
-		add ax,SectorNoOfFAT1 
-		mov cx, 2				;handle the FATEntry crossover two sector
-		call ReadSector			;read the sector 
-
-		mov ax, word [bp - 2]
-		test ax, 1
-		jz
 		shr ax, 1
+		push dx
 		mov dl, 3
 		mul dl
-		
-
 		pop dx
+		test word [bp - 2], 1
+		jz .EVENNUM
+		inc ax
+.EVENNUM:
+		push ax
+		shr ax, 9				; ax = ax / 512 (1 << 9)
+		add ax,SectorNoOfFAT1 	; get the sector number of FATEntry
+		cmp ax, dx				; dx save privous sector number  
+		jz .OLDSECTOR
+		mov dx, ax
+		mov cx, 2				;handle the FATEntry crossover two sector
+		call ReadSector			;read the sector 
+.OLDSECTOR:
+		pop ax
+		and ax, 111111111b		; Offset of FATEntry in BaseOfLoad-0x100:0x100
+		add bx, ax
+		mov ax, word [es:bx]
+		test word [bp - 2], 1
+		jz .EVENNUM1
+		shr ax, 4
+		jmp .DONE
+.EVENNUM1:
+		and ax, 0xfff
+.DONE:
+		pop es
+		add sp, 2 
 		pop bp
 		ret
 		
@@ -163,11 +180,10 @@ GetFATEntry:
 ReadSector:
 		push bp
 		mov bp, sp
-		push dx
-		
 		sub sp, 2
 		mov byte [bp - 2], cl
 		
+		push dx
 		push bx					;save the destination
 		mov bl, [BPB_SecPerTrk]
 		div bl
@@ -186,8 +202,8 @@ ReadSector:
 		int 0x13
 		jc	.GoOnReading		;if occur error the CF will be set,so go on
 		
-		add sp, 2				;pop out cx
 		pop dx
+		add sp, 2				;pop out cx
 		pop bp
 		ret
 
@@ -236,9 +252,9 @@ StringTable:	dw	BootMessage
 				dw	FoundMessage
 				dw	NotFoundMessage
 
-BootMessage:	db	"Hello, My World is begining...",0
+BootMessage:	db	"New World ",0
 FoundMessage:	db	"Loading",0
-NotFoundMessage:db	"Not Found Load.bin",0
+NotFoundMessage:db	"Not Found Load",0
 LoaderName:		db	"LOAD    BIN" ; size must be 11
 wReadSectorNo	dw	0
 CursorPosition	dw	0

@@ -3,7 +3,7 @@
 #################################
 
 # Programs
-ASM		= nasm
+ASM			= nasm
 DASM		= ndisasm
 #FLAGS
 ASMFLAGS	= -I Include/ -o
@@ -32,17 +32,17 @@ bulidimg:
 	rm -rf $(IMGNAME)
 	bximage -q -fd -size=1.44 $(IMGNAME) 
 	dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
-	@mkdir -p $(TMPDIR) #test -d $(TMPDIR) || mkdir $(TMPDIR)
+	@test -d $(TMPDIR) || mkdir $(TMPDIR)
 	mount -o loop $(IMGNAME) $(TMPDIR)
 	@cp $(LOAD) $(TMPDIR) -v
 	@sleep 1
 	umount $(TMPDIR)
 
 disasm:
-	rm -rf $(DASMOUT)
+	@test -e $(DASMOUT) && rm -rf $(DASMOUT)
 	$(DASM) $(DASMFLAGS) $(BOOT) >> $(DASMOUT)
 clean:
-	rm -f $(BOOT) $(LOAD) $(IMGNAME)
+	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT)
 
 boot.bin: boot.asm
 	$(ASM) $(ASMFLAGS) $@ $<
