@@ -28,7 +28,7 @@ everything: $(BOOT) $(LOAD)
 image:  everything bulidimg
 
 # build image
-bulidimg:
+bulidimg: 
 	rm -rf $(IMGNAME)
 	bximage -q -fd -size=1.44 $(IMGNAME) 
 	dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
@@ -39,7 +39,7 @@ bulidimg:
 	umount $(TMPDIR)
 
 disasm:
-	@test -e $(DASMOUT) && rm -rf $(DASMOUT)
+	@rm -rf $(DASMOUT)
 	$(DASM) $(DASMFLAGS) $(BOOT) >> $(DASMOUT)
 clean:
 	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT)
