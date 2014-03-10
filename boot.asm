@@ -14,26 +14,8 @@ BaseOfLoader	equ 0x9000
 ;;; FAT12 boot sector format
 		jmp LABEL_START			;BS_jmpBoot
 		nop
-BS_OEMName 		db		'WForrest' ;size must be 8
-BPB_BytesPerSec dw		512		   ;bytes per sector
-BPB_SecPerClus	db		1		   ;sector per cluster
-BPB_RsvdSecCnt	dw		1		   ;how many sector used by boot record
-BPB_NumFATS		db		2		   ;how many FAT table
-BPB_ROOTEntCnt	dw		224		   ;the maximum number of file under the root
-BPB_TotSec16	dw		2880	   ;count of logical sector(2*80*18)
-BPB_Media		db		0xF0	   ;
-BPB_FATSz16		dw		9		   ;sector per FAT
-BPB_SecPerTrk	dw		18		   ;sector per track
-BPB_NumHeads	dw		2		   ;count of disk head
-BPB_HiddSec		dd		0		   ;count of hide sector
-BPB_TotSec32	dd		0		   ;
-BS_DrvNum		db		0		   ;interupt 13 drive number
-BS_Reserved1	db		0		   ;
-BS_BootSig		db		0x29	   ;extension boot sign
-BS_VolID		dd		0		   ;
-BS_VolLab		db		'wforrest0.1' ;size must be 11
-BS_FileSysType	db		'FAT12   '	  ;size must be 8
-
+%define FAT_HEADER
+%include "fat12def.inc"
 LABEL_START:	
 		mov ax, cs
 		mov ds, ax
@@ -54,7 +36,6 @@ LABEL_START:
 		int 0x13
 
 ;;; begin to load
-SectorNoOfRootDirectory		equ		19 ;first Sector number of RootDir
 		mov word [wReadSectorNo], SectorNoOfRootDirectory
 LABEL_BEGIN_SEARCH_ROOT_DIR:
 		cmp word [wRootDirReadDone], 0
@@ -104,7 +85,6 @@ LABEL_FOUND_LOADER:
 ;;; begin to load the load.bin 
 		and di, 0xffe0
 		add di, 0x1A
-SectorNoOfFAT1 equ 1				;the first sector of FAT1
 		mov ax, BaseOfLoader		
 		mov es, ax
 		mov ax, word [es:di] 			;begin FATEntry of load.bin
@@ -114,14 +94,13 @@ LABEL_GOON_LOAD:
 		mov cx, 1
 		push ax						;save the FATEntry
 		mov bx, di
-		add ax, (RootDirSectors + SectorNoOfRootDirectory - 2)
+		add ax, FileDataSectorNo
 		call ReadSector
 		add di, 512
 		pop ax
 		call GetFATEntry			;ax return the next FATEntry
 		cmp ax, 0xfff
-		jz LABEL_LOADED_BIN
-		jmp LABEL_GOON_LOAD
+		jnz LABEL_GOON_LOAD
 LABEL_LOADED_BIN:		
 		jmp BaseOfLoader:OffsetOfLoader 
 	
@@ -258,7 +237,6 @@ NotFoundMessage:db	"Not Found Load",0
 LoaderName:		db	"LOAD    BIN" ; size must be 11
 wReadSectorNo	dw	0
 CursorPosition	dw	0
-RootDirSectors	equ 14			;BPB_RsvdSecCnt * 32(entry size) / 512
 wRootDirReadDone dw	RootDirSectors
 		times 510-($-$$)	db 0
 		dw	0xaa55

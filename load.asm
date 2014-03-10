@@ -5,57 +5,15 @@
 ;;; 		Load module from floppy into 0x6000 by Boot module 
 ;;; 		and load the Kernel into 0x8000, now is the protect mode
 
+		
+%include "fat12def.inc"
 
-%include "pmdef.inc"		
-	
 		org 0x100
 		jmp LABEL_START
-[SECTION .gdt]
-;; GDT
-LABEL_GDT:			Descriptor			0,			    	0,			0 		; The NULL DESC
-LABEL_DESC_NORMAL:	Descriptor			0,   		   0xffff,	DA_DRW		 	; Normal DESC
-LABEL_DESC_CODE16:	Descriptor			0,			   0xffff,  DA_C
-LABEL_DESC_CODE32:	Descriptor			0,   Code32SegLen - 1,	DA_C + DA_32 	; Code32 DESC
-LABEL_DESC_DATA:	Descriptor			0,	   DataSegLen - 1,	DA_DRW 			; Data32 DESC
-LABEL_DESC_STACK:	Descriptor			0,	  	   TopOfStack,  DA_DRW + DA_32	; Stack DESC
-LABEL_DESC_VIDEO:	Descriptor	  0xb8000,	 		   0xffff,  DA_DRW			; Display Memory DESC
-;;; END of GDT
+TopOfStack	equ	0x100
+BaseOfKernel	equ 0x8000
+OffsetOfKernel	equ 0
 
-		
-GdtLen	equ	$ - LABEL_GDT
-GdtPtr	dw	GdtLen - 1
-		dd 0
-		
-;;; GDT Selectors
-SelectorNormal	equ LABEL_DESC_NORMAL - LABEL_GDT
-SelectorCode32	equ LABEL_DESC_CODE32 - LABEL_GDT
-SelectorCode16 	equ LABEL_DESC_CODE16 - LABEL_GDT
-SelectorData	equ LABEL_DESC_DATA - LABEL_GDT
-SelectorStack	equ LABEL_DESC_STACK - LABEL_GDT
-SelectorVideo	equ	LABEL_DESC_VIDEO - LABEL_GDT
-;;; END of Selectors
-
-[SECTION .data]
-ALIGN 32
-[BITS 32]
-LABEL_DATA:
-;; SPValueInRealMode dw 0
-PMMessage:		db "In Protect Mode now. ^-^", 0
-OffsetPMMessage equ PMMessage - $$
-;; TestString:		db "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0
-;; OffsetTestString equ TestString - $$
-DataSegLen equ $ - $$
-;;; END of [SECTION .data]
-
-[SECTION .gs]
-ALIGN 32
-[BITS 32]
-LABEL_STACK:
-		times 512 db 0
-TopOfStack equ $ - $$ - 1
-
-;;; END of [SECTION .gs]
-		
 [SECTION .s16]
 [BITS 16]
 LABEL_START:
@@ -64,117 +22,219 @@ LABEL_START:
 		mov ds, ax
 		mov es, ax
 		mov ss, ax
-		mov sp, 0x100
+		mov sp, TopOfStack
+
+		mov bx, 0
+		call DispStr			;display Loading
+;;; reset the floppy
+		xor ah, ah
+		xor dl, dl
+		int 0x13
+;;; begin to load kernel
+		mov word [wReadSectorNo], SectorNoOfRootDirectory
+LABEL_BEGIN_SEARCH_ROOT_DIR:
+		cmp word [wRootDirReadDone], 0
+		jz LABEL_NOFOUND_LOADER
+		dec word [wRootDirReadDone]
+		mov ax, BaseOfKernel
+		mov es, ax
+
+		mov ax, word [wReadSectorNo]
+		mov cx, 1
+		mov bx, OffsetOfKernel
+		call ReadSector
+
+		add word [wReadSectorNo], 1
+		mov di, OffsetOfKernel	; es:di	->	BaseOfKernel:OffsetOfKernel
 		
-;;; initialization the Descriptor MACRO
-;;; usage: InitDesc Lable, Desc		
-%macro InitDesc 2
-		xor eax, eax
-		mov ax, cs
-		shl eax, 4				;shifted left
-		add eax, %1				;get the lable address in read-mode
-		mov [%2 + 2], ax
-		shr eax, 16				;shifted right
-		mov byte [%2 + 4], al
-		mov byte [%2 + 7], ah
-%endmacro
-		
-		
-;;; init the Code32 DESC
-		InitDesc LABEL_CODE32, LABEL_DESC_CODE32
-		
-;;; Data DESC
-		InitDesc LABEL_DATA, LABEL_DESC_DATA
-		
-;;; Stack DESC
-		InitDesc LABEL_STACK, LABEL_DESC_STACK
-		
-;;; init the GDTPTR
-		xor eax, eax
-		mov ax, cs
-		shl eax, 4
-		add eax, LABEL_GDT
-		mov dword [GdtPtr + 2], eax ;set the GDT address into GDTPTR
-	
-;;; load the GDT
-		lgdt [GdtPtr]
-		
-;;; close the interupt
+		mov dx, 16				; each sector contain 16 dir entry
+LABEL_LOOP_SECTOR:		
+		mov cx, 11				; length of filename
+		mov si, KernelName		; ds:si	->	KernelName
+LABEL_COMPARE_NAME:		
 		cli
-		
-;;; open the A20 address line
-		in al, 0x92
-		or al, 00000010b
-		out 92h, al
-
-;;; set the cr0
-		mov eax, cr0
-		or eax, 1
-		mov cr0, eax
-		
-;;; jmp to protect mode
-		jmp dword SelectorCode32:0	;jmp to LABEL_CODE32 
-
-;;; END of [SECTION .s16]
-
-[SECTION .s32]
-[BITS 32]
-LABEL_CODE32:
-
-		mov ax, SelectorVideo
-		mov gs, ax
-
-		mov ax, SelectorData
-		mov ds, ax
-		
-		mov ax, SelectorStack
-		mov ss, ax
-		
-		mov esp, TopOfStack
-		
-		mov eax, OffsetPMMessage
-		mov ebx, 2
-		call DispStr32
-
+		lodsb
+		cmp [es:di], al
+		jz	LABEL_COMPARE_NAME_GOON
+		jmp LABEL_DIFFER_NAME
+LABEL_COMPARE_NAME_GOON:
+		dec cx
+		cmp cx, 0
+		jz LABEL_FOUND_LOADER
+		inc di
+		jmp LABEL_COMPARE_NAME
+LABEL_DIFFER_NAME:
+		and di, 0xffe0			;the entry size is 32 bytes,  small 10 0000b 
+		add di, 32
+		dec dx
+		cmp dx, 0
+		jz LABEL_BEGIN_SEARCH_ROOT_DIR
+		jmp LABEL_LOOP_SECTOR
+LABEL_NOFOUND_LOADER:
+		mov bx, 2
+		call DispStr
 		jmp $
+LABEL_FOUND_LOADER:
+		mov bx, 1
+		call DispStr
+;;; begin to load the load.bin 
+		and di, 0xffe0
+		add di, 0x1A
+		mov ax, BaseOfKernel
+		mov es, ax
+		mov ax, word [es:di] 			;begin FATEntry of kernel.bin
+		mov di, OffsetOfKernel			;kernel.bin to BaseOfKernel:OffsetOfKernel
+		xor dx, dx
+LABEL_GOON_LOAD:
+		mov cx, 1
+		push ax						;save the FATEntry
+		mov bx, di
+		add ax, FileDataSectorNo
+		call ReadSector
+		add di, 512
+		pop ax
+		call GetFATEntry			;ax return the next FATEntry
+		cmp ax, 0xfff
+		jnz LABEL_GOON_LOAD
+LABEL_LOADED_BIN:		
+		mov bx, 3
+		call DispStr
+		jmp BaseOfKernel:OffsetOfKernel
 
 
-DispStr32:
-		push esi
-		push edi
-		mov esi, eax
-		mov eax, 80*2
-		mul bl
-		mov edi, eax			;edi = ebx * 160
-		xor eax, eax
-		mov ah, 0xC				;set the string color: red letter, black background
-		cld						;set the direct for lodsb
-.1:
-		lodsb					;mov al, [esi] ;inc esi
-		test al,al
-		jz .2
-		mov [gs:edi], ax
-		add edi, 2
-		jmp .1
-.2:
+;;; input:
+;;; 	ax:FATEntry number
+GetFATEntry:
+		push bp
+		mov bp, sp
+		sub sp, 2
+		mov word [bp - 2], ax	;save the FATEntry number
+		push es
+		mov ax, BaseOfKernel
+		sub ax, 0x100
+		mov es, ax
+		mov bx, OffsetOfKernel		;read FAT1 to BaseOfLoad-0x100:0x100, maximun size is 4k
+		mov ax, word [bp - 2]
+		shr ax, 1
+		push dx
+		mov dl, 3
+		mul dl
+		pop dx
+		test word [bp - 2], 1
+		jz .EVENNUM
+		inc ax
+.EVENNUM:
+		push ax
+		shr ax, 9				; ax = ax / 512 (1 << 9)
+		add ax,SectorNoOfFAT1 	; get the sector number of FATEntry
+		cmp ax, dx				; dx save privous sector number  
+		jz .OLDSECTOR
+		mov dx, ax
+		mov cx, 2				;handle the FATEntry crossover two sector
+		call ReadSector			;read the sector 
+.OLDSECTOR:
+		pop ax
+		and ax, 111111111b		; Offset of FATEntry in BaseOfLoad-0x100:0x100
+		add bx, ax
+		mov ax, word [es:bx]
+		test word [bp - 2], 1
+		jz .EVENNUM1
+		shr ax, 4
+		jmp .DONE
+.EVENNUM1:
+		and ax, 0xfff
+.DONE:
+		pop es
+		add sp, 2 
+		pop bp
+		ret
+		
+;;; input:
+;;; 	ax: sector number
+;;; 	cx: sector count
+;;; 	es:bx:	Destination		
+ReadSector:
+		push bp
+		mov bp, sp
+		sub sp, 2
+		mov byte [bp - 2], cl
+		
+		push dx
+		push bx					;save the destination
+		mov bl, SecPerTrk
+		div bl
+		inc ah
+		mov cl, ah				;starting sector in current track
+		mov dh, al
+		and dh, 1				;disk head
+		mov ch, al
+		shr ch, 1				;track number
+		pop bx
+		
+		mov dl, DrvNum
+.GoOnReading:
+		mov ah, 2
+		mov al, byte [bp - 2]
+		int 0x13
+		jc	.GoOnReading		;if occur error the CF will be set,so go on
+		
+		pop dx
+		add sp, 2				;pop out cx
+		pop bp
+		ret
+		
+DispStr:
+		push si
+		push di
+		mov ax, 2				;the table entry size
+		mul bl					;get offset of string
+		mov si, StringTable
+		add si, ax	
+		mov ax, [si]			;get absolute address
+		mov si, ax				;es:si -> string
+		mov di, word [CursorPosition]
+		cli
+.loop:
+		lodsb
+		cmp al, 0
+		jz .done
+		mov ah, 0xc				;red letter, black backgroud
+		mov [gs:di], ax
+		add di, 2
+		jmp .loop
+.done:
+		mov word [CursorPosition], di
 		call DispReturn
-		pop edi
-		pop esi
+		pop di
+		pop si
 		ret
 
 DispReturn:
-		push ebx
-		push eax
-		mov eax, edi
-		mov bl, 80*2
+		push bx
+		mov bl, 160
+		mov ax, word [CursorPosition]
 		div bl
-		and eax, 0xff			;retain quotient
-		inc eax
-		mov bl, 80*2
+		and ax, 0xff
+		inc ax
+		mov bl, 160
 		mul bl
-		mov edi, eax
-		pop eax
-		pop ebx
-		ret 
-;;; END of [SECTION .s32]
-Code32SegLen equ $ - $$ - 1
+		mov word [CursorPosition], ax
+		pop bx
+		ret
+
+
+		
+;;; DATA
+StringTable:	dw LoadMessage
+				dw FoundMessage
+				dw NotFoundMessage
+				dw KernelMessage
+
+LoadMessage:	db	"Loading.",0
+FoundMessage:	db	"Found Kernel.bin",0
+NotFoundMessage:db	"Not Found Kernel",0
+KernelMessage:	db	"Loaded Kernel Done",0
+KernelName:		db	"KERNEL  BIN"
+wReadSectorNo	dw	0
+CursorPosition	dw	480
+wRootDirReadDone dw RootDirSectors

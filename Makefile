@@ -7,22 +7,23 @@ ASM			= nasm
 DASM		= ndisasm
 #FLAGS
 ASMFLAGS	= -I Include/ -o
-DASMFLAGS	= -o 0x7c00 -s 0x7c3e
+BOOTDASMFLAGS	= -o 0x7c00 -s 0x7c3e
 
 # Targets
 BOOT		= boot.bin
 LOAD		= load.bin
+KERNEL		= kernel.bin
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
 DASMOUT		= ndisasm.asm
 # Phony Targets
-.PHONY: everything image buildimg clean nop disasm
+.PHONY: everything image buildimg clean nop bootdisasm
 
 # the default starting postion
 nop:
 	@echo "why not \'make image' huh? :)"
 # create all 
-everything: $(BOOT) $(LOAD)
+everything: $(BOOT) $(LOAD) $(KERNEL)
 
 # create the final image
 image:  everything bulidimg
@@ -34,19 +35,21 @@ bulidimg:
 	dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
 	@test -d $(TMPDIR) || mkdir $(TMPDIR)
 	mount -o loop $(IMGNAME) $(TMPDIR)
-	@cp $(LOAD) $(TMPDIR) -v
+	@cp $(LOAD) $(KERNEL) $(TMPDIR) -v
 	@sleep 1
 	umount $(TMPDIR)
 
-disasm:
+bootdisasm:
 	@rm -rf $(DASMOUT)
-	$(DASM) $(DASMFLAGS) $(BOOT) >> $(DASMOUT)
+	$(DASM) $(BOOTDASMFLAGS) $(BOOT) >> $(DASMOUT)
 clean:
-	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT)
+	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL)
 
-boot.bin: boot.asm
+$(BOOT): boot.asm
 	$(ASM) $(ASMFLAGS) $@ $<
 
-load.bin: load.asm
+$(LOAD): load.asm
 	$(ASM) $(ASMFLAGS) $@ $<
 
+$(KERNEL): kernel.asm
+	$(ASM) $(ASMFLAGS) $@ $<
