@@ -1,4 +1,4 @@
-;; boot.asm by the weiforrest
+;; boot.asm		(c) 2014 weiforrest
 ;; Compilation method:
 ;; 		nasm boot.asm -o boot.bin
 ;; Comment:
@@ -24,12 +24,10 @@ LABEL_START:
 		mov ax, 0xb800			
 		mov gs, ax
 		xor di, di				;di alway point cursor 
-;;; set the vag mode, clean scren
- 		mov ax, 0x3
- 		int 0x10
 
-		mov bx, 0
-		call DispStr			;display hello
+		call ClearScreen
+		mov si, BootMessage
+		call DispString			;display hello
 ;;; reset the floppy
 		xor ah, ah
 		xor dl, dl
@@ -76,12 +74,12 @@ LABEL_DIFFER_NAME:
 		jz LABEL_BEGIN_SEARCH_ROOT_DIR
 		jmp LABEL_LOOP_SECTOR
 LABEL_NOFOUND_LOADER:
-		mov bx, 2
-		call DispStr
+		mov si, NotFoundMessage
+		call DispString
 		jmp $
 LABEL_FOUND_LOADER:
-		mov bx, 1
-		call DispStr
+		mov si, FoundMessage
+		call DispString
 ;;; begin to load the load.bin 
 		and di, 0xffe0
 		add di, 0x1A
@@ -92,6 +90,8 @@ LABEL_FOUND_LOADER:
 		xor dx, dx
 LABEL_GOON_LOAD:
 		mov cx, 1
+		mov si, DotMessage
+		call DispString
 		push ax						;save the FATEntry
 		mov bx, di
 		add ax, FileDataSectorNo
@@ -102,6 +102,9 @@ LABEL_GOON_LOAD:
 		cmp ax, 0xfff
 		jnz LABEL_GOON_LOAD
 LABEL_LOADED_BIN:		
+		mov si, BootMessage
+		add si, 30
+		call DispString
 		jmp BaseOfLoader:OffsetOfLoader 
 	
 
@@ -186,57 +189,49 @@ ReadSector:
 		pop bp
 		ret
 
-DispStr:
-		push si
-		push di
-		mov ax, 2				;the table entry size
-		mul bl					;get offset of string
-		mov si, StringTable
-		add si, ax	
-		mov ax, [si]			;get absolute address
-		mov si, ax				;es:si -> string
-		mov di, word [CursorPosition]
-		cli
+;;; ClearScreen
+ClearScreen:
+		pusha
+		mov ax, 0x0600
+		xor cx, cx
+		xor bh, 0xf
+		mov dh, 24
+		mov dl,79
+		int 0x10
+SetCursorPostion:
+		mov ah, 02
+		mov bh, 0
+		mov dx, 0
+		int 0x10
+		popa
+		ret
+
+;;; DispString
+;;; input:
+;;; 			ds:si -> message
+DispString:
+		pusha
+		mov ah, 0xe
+		xor bh, bh
+		cld
 .loop:
 		lodsb
-		cmp al, 0
+		test al, al
 		jz .done
-		mov ah, 0xc				;red letter, black backgroud
-		mov [gs:di], ax
-		add di, 2
+		int 0x10
 		jmp .loop
 .done:
-		mov word [CursorPosition], di
-		call DispReturn
-		pop di
-		pop si
+		popa
 		ret
 
-DispReturn:
-		push bx
-		mov bl, 160
-		mov ax, word [CursorPosition]
-		div bl
-		and ax, 0xff
-		inc ax
-		mov bl, 160
-		mul bl
-		mov word [CursorPosition], ax
-		pop bx
-		ret
-		
 
 ;;; DATA
-StringTable:	dw	BootMessage
-				dw	FoundMessage
-				dw	NotFoundMessage
-
-BootMessage:	db	"New World ",0
-FoundMessage:	db	"Loading",0
+BootMessage:	db	"New World is Coming For Now...",13,10,0
+FoundMessage:	db	"Booting",0
 NotFoundMessage:db	"Not Found Load",0
 LoaderName:		db	"LOAD    BIN" ; size must be 11
 wReadSectorNo	dw	0
-CursorPosition	dw	0
+DotMessage:		db ".",0
 wRootDirReadDone dw	RootDirSectors
 		times 510-($-$$)	db 0
 		dw	0xaa55

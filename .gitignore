@@ -1,0 +1,7 @@
+# .gitignore	(c) 2014 weiforrest
+# ignore the .img, object file and temp file
+
+*.bin
+*.o
+*~
+*.img

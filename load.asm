@@ -1,4 +1,4 @@
-;;; load.asm by the weiforrest
+;;; load.asm		(c) 2014 weiforrest
 ;;; Compilation method:
 ;;; 		nasm load.asm -o load.bin
 ;;; Comment:
@@ -24,8 +24,8 @@ LABEL_START:
 		mov ss, ax
 		mov sp, TopOfStack
 
-		mov bx, 0
-		call DispStr			;display Loading
+		mov si, LoadMessage
+		call DispString		;display Loading
 ;;; reset the floppy
 		xor ah, ah
 		xor dl, dl
@@ -71,12 +71,10 @@ LABEL_DIFFER_NAME:
 		jz LABEL_BEGIN_SEARCH_ROOT_DIR
 		jmp LABEL_LOOP_SECTOR
 LABEL_NOFOUND_LOADER:
-		mov bx, 2
-		call DispStr
+		mov si, NotFoundMessage
+		call DispString
 		jmp $
 LABEL_FOUND_LOADER:
-		mov bx, 1
-		call DispStr
 ;;; begin to load the load.bin 
 		and di, 0xffe0
 		add di, 0x1A
@@ -87,6 +85,8 @@ LABEL_FOUND_LOADER:
 		xor dx, dx
 LABEL_GOON_LOAD:
 		mov cx, 1
+		mov si, DotMessage
+		call DispString
 		push ax						;save the FATEntry
 		mov bx, di
 		add ax, FileDataSectorNo
@@ -97,8 +97,8 @@ LABEL_GOON_LOAD:
 		cmp ax, 0xfff
 		jnz LABEL_GOON_LOAD
 LABEL_LOADED_BIN:		
-		mov bx, 3
-		call DispStr
+		mov si, ReturnMessage
+		call DispString
 		jmp BaseOfKernel:OffsetOfKernel
 
 
@@ -182,59 +182,33 @@ ReadSector:
 		add sp, 2				;pop out cx
 		pop bp
 		ret
+
+
 		
-DispStr:
-		push si
-		push di
-		mov ax, 2				;the table entry size
-		mul bl					;get offset of string
-		mov si, StringTable
-		add si, ax	
-		mov ax, [si]			;get absolute address
-		mov si, ax				;es:si -> string
-		mov di, word [CursorPosition]
-		cli
+;;; DispString
+;;; input:
+;;; 			ds:si -> message
+DispString:
+		pusha
+		mov ah, 0xe
+		xor bh, bh
+		cld
 .loop:
 		lodsb
-		cmp al, 0
+		test al, al
 		jz .done
-		mov ah, 0xc				;red letter, black backgroud
-		mov [gs:di], ax
-		add di, 2
+		int 0x10
 		jmp .loop
 .done:
-		mov word [CursorPosition], di
-		call DispReturn
-		pop di
-		pop si
+		popa
 		ret
 
-DispReturn:
-		push bx
-		mov bl, 160
-		mov ax, word [CursorPosition]
-		div bl
-		and ax, 0xff
-		inc ax
-		mov bl, 160
-		mul bl
-		mov word [CursorPosition], ax
-		pop bx
-		ret
-
-
-		
+	
 ;;; DATA
-StringTable:	dw LoadMessage
-				dw FoundMessage
-				dw NotFoundMessage
-				dw KernelMessage
-
-LoadMessage:	db	"Loading.",0
-FoundMessage:	db	"Found Kernel.bin",0
+LoadMessage:	db	"Loading",0
 NotFoundMessage:db	"Not Found Kernel",0
-KernelMessage:	db	"Loaded Kernel Done",0
 KernelName:		db	"KERNEL  BIN"
+DotMessage:		db	".", 0
 wReadSectorNo	dw	0
-CursorPosition	dw	480
+ReturnMessage:	db	13, 10, 0
 wRootDirReadDone dw RootDirSectors
