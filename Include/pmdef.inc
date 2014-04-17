@@ -14,10 +14,37 @@
 	db (%1 >> 24) & 0xff
 %endmacro
 
+;;; Gate
+;;; Usage Gate Base, Selector, DCount, Attr
+;;; Base: dd
+;;; Selector: dw
+;;; Dcount: db
+;;; Attr: db
+%macro Gate 4
+	dw %1 & 0xffff
+	dw %2
+	dw (%3 & 0x1f) | ((%4 << 8) & 0xff00)
+	dw (%1 >> 16) & 0xffff
+%endmacro
+
+
+;;; initialization the Descriptor MACRO
+;;; usage: InitDesc Lable, Desc		
+%macro InitDesc 2
+		xor eax, eax
+		mov ax, cs
+		shl eax, 4				;shifted left
+		add eax, %1				;get the lable address in read-mode
+		mov [%2 + 2], ax
+		shr eax, 16				;shifted right
+		mov byte [%2 + 4], al
+		mov byte [%2 + 7], ah
+%endmacro
+		
 ;;; Descriptor Attribute
 		
 DA_32	EQU 0x4000				;32 bits code seg
-		
+DA_LIMIT_4K EQU 0x8000			
 ;;; Descriptor Privilege level
 DA_DPL0	EQU 0x00
 DA_DPL1	EQU 0x20
@@ -40,6 +67,11 @@ DA_386TSS	EQU 0x89
 DA_386CGate	EQU 0x8C
 DA_386IGate EQU 0x8E
 DA_386TGate EQU 0x8F
+
+;;; Page attribute
+PG_P		EQU 0x1
+PG_RW		EQU 0x2
+PG_USU		EQU 0x4
 
 
 

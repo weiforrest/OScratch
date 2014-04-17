@@ -5,14 +5,17 @@
 # Programs
 ASM			= nasm
 DASM		= ndisasm
+LD			= ld
 #FLAGS
 ASMFLAGS	= -I Include/ -o
+KASMFLAGS	= -f elf -o
 BOOTDASMFLAGS	= -o 0x7c00 -s 0x7c3e
-
+KLDFLAGS	= -m elf_i386 -s -Ttext 0x30400 -o
 # Targets
 BOOT		= boot.bin
 LOAD		= load.bin
 KERNEL		= kernel.bin
+KERNEL_OBJ	= kernel.o
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
 DASMOUT		= ndisasm.asm
@@ -43,7 +46,7 @@ bootdisasm:
 	@rm -rf $(DASMOUT)
 	$(DASM) $(BOOTDASMFLAGS) $(BOOT) >> $(DASMOUT)
 clean:
-	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL)
+	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL) $(KERNEL_OBJ)
 
 $(BOOT): boot.asm
 	$(ASM) $(ASMFLAGS) $@ $<
@@ -51,5 +54,8 @@ $(BOOT): boot.asm
 $(LOAD): load.asm
 	$(ASM) $(ASMFLAGS) $@ $<
 
-$(KERNEL): kernel.asm
-	$(ASM) $(ASMFLAGS) $@ $<
+$(KERNEL): $(KERNEL_OBJ)
+	$(LD) $(KLDFLAGS) $@ $<
+
+$(KERNEL_OBJ):kernel.asm
+	$(ASM) $(KASMFLAGS) $@ $<
