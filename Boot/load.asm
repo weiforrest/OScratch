@@ -376,7 +376,7 @@ LABEL_CODE32:
 		mov esi, OffsetMemoryInfoBlk
 		call DispMemInfo
 		mov dword [OffsetCursorPosition], edi
-		;; call SetupPage
+		call SetupPage
 		
 		call InitKernel
 		jmp SelectorFLATC:KernelPhyAddr

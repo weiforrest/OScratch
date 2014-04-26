@@ -39,13 +39,11 @@ DASMOUT		= ndisasm.asm
 .PHONY: everything image buildimg clean nop bootdisasm
 
 # the default starting postion
-nop:
-	@echo "why not \'make image' huh? :)"
-# create all 
-everything: $(BOOT) $(LOAD) $(KERNEL)
-
 # create the final image
 image:  everything bulidimg
+
+# create all 
+everything: $(BOOT) $(LOAD) $(KERNEL)
 
 # build image
 bulidimg: 
