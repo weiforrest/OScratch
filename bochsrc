@@ -23,7 +23,7 @@ boot:floppy
 # log: bochsout.txt
 
 #enable the gdb with bochs
-gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
+#gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
 
 # disable the mouse
 mouse: enabled=0,toggle=ctrl+f10

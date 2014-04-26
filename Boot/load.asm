@@ -120,8 +120,6 @@ LABEL_LOADED_BIN:
 		call GetMemoryInfo
 		
 ;;; Into protect mode
-;;; Stack DESC
-		InitDesc LABEL_STACK, LABEL_DESC_STACK
 ;;; init the GDTPTR
 		xor eax, eax
 		mov ax, cs
@@ -297,9 +295,8 @@ CloseFloppy:
 ;; GDT
 LABEL_GDT:			Descriptor			0,			    	0,			0 		; The NULL DESC
 LABEL_DESC_NORMAL:	Descriptor			0,   		   0xffff,	DA_DRW		 	; Normal DESC
-LABEL_DESC_STACK:	Descriptor			0,	  	   TopOfStack,  DA_DRW + DA_32	; Stack DESC
 LABEL_DESC_VIDEO:	Descriptor	  0xb8000,	 		   0xffff,  DA_DRW			; Display Memory DESC
-LABEL_DESC_FLATRW:	Descriptor 			0,			  0xfffff,	DA_DRW | DA_LIMIT_4K
+LABEL_DESC_FLATRW:	Descriptor 			0,			  0xfffff,	DA_DRW | DA_LIMIT_4K | DA_32
 LABEL_DESC_FLATC:	Descriptor			0,			  0xfffff,	DA_C | DA_CR | DA_LIMIT_4K | DA_32
 ;;; END of GDT
 
@@ -309,7 +306,6 @@ GdtPtr	dw	GdtLen - 1
 
 ;;; GDT Selectors
 SelectorNormal	equ LABEL_DESC_NORMAL - LABEL_GDT
-SelectorStack	equ LABEL_DESC_STACK - LABEL_GDT
 SelectorVideo	equ	LABEL_DESC_VIDEO - LABEL_GDT
 SelectorFLATC equ LABEL_DESC_FLATC - LABEL_GDT
 SelectorFLATRW equ LABEL_DESC_FLATRW - LABEL_GDT
@@ -353,8 +349,8 @@ DataSegLen equ $ - $$
 ALIGN 32
 [BITS 32]
 LABEL_STACK:
-		times 512 db 0
-TopOfStack equ $ - $$ - 1
+		times 0x512 db 0
+TopOfStack equ $ + BaseOfLoad
 
 ;;; END of [SECTION .gs]
 
@@ -368,8 +364,6 @@ LABEL_CODE32:
 		mov ax, SelectorFLATRW
 		mov ds, ax
 		mov es, ax
-		
-		mov ax, SelectorStack
 		mov ss, ax
 		
 		mov esp, TopOfStack
@@ -382,10 +376,10 @@ LABEL_CODE32:
 		mov esi, OffsetMemoryInfoBlk
 		call DispMemInfo
 		mov dword [OffsetCursorPosition], edi
-		call SetupPage
+		;; call SetupPage
 		
 		call InitKernel
-		jmp SelectorFLATC:0x30400 
+		jmp SelectorFLATC:KernelPhyAddr
 %include "Displib.inc"
 		
 ;;; input esi: Memory info block
@@ -434,15 +428,11 @@ DispMemInfo:
 		ret
 
 SetupPage:
-		push es
 		push eax
 		push ebx
 		push ecx
 		push edx
 		push edi
-
-		mov ax, SelectorFLATRW
-		mov es, ax
 
 		xor edx, edx
 		mov eax, dword [OffsetMemorySize]
@@ -491,7 +481,6 @@ SetupPage:
 		pop ecx
 		pop ebx
 		pop eax
-		pop es
 		ret
 
 DefaultHandle:
@@ -510,7 +499,7 @@ InitKernel:
 		mov cx, word [BaseOfKernel * 0x10 + 44] ;get the program header number
 		mov esi, dword [BaseOfKernel * 0x10 + 28] ;get the program header table offset
 		add esi, BaseOfKernel * 0x10			   ;esi point the program header table
-		mov bx, word [BaseOfKernel + 42]		   ;program header size
+		mov bx, word [BaseOfKernel * 0x10 + 42]		   ;program header size
 		movzx ebx, bx
 .begin:
 		mov eax, dword [esi]
@@ -521,7 +510,7 @@ InitKernel:
 		mov eax, dword [esi + 4] ; program section fileoffset
 		add eax, BaseOfKernel * 0x10	 ; source
 		push eax
-		push dword [esi + 8]	; dest
+		push dword [esi + 8]	; destr
 		call MemCpy
 		add esp, 12
 .noCpy:
@@ -541,12 +530,14 @@ MemCpy:
 		push ecx
 		push esi
 		push edi
+
 		mov ecx, dword [ebp + 16]
 		mov esi, dword [ebp + 12]
 		mov edi, dword [ebp + 8]
 		cmp ecx, 0
 		jz .CpyDone
 
+		cld
 		rep movsb
 
 .CpyDone:
