@@ -1,3 +1,5 @@
+/* protect.h   (c) weiforrest */
+/* defintion about protect mode  */
 #ifndef __OSCRATCH_PROTECT_H
 #define __OSCRATCH_PROTECT_H
 

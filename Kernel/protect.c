@@ -1,4 +1,5 @@
-/* protect.c save about protect mode function */
+/* protect.c    (c) weiforrest */
+/* protect mode function */
 #include <types.h>
 #include <const.h>
 #include <protect.h>
@@ -21,6 +22,24 @@ void stack_exception();
 void general_protection();
 void page_fault();
 void copr_error();
+
+void i8259aint00();
+void i8259aint01();
+void i8259aint02();
+void i8259aint03();
+void i8259aint04();
+void i8259aint05();
+void i8259aint06();
+void i8259aint07();
+void i8259aint08();
+void i8259aint09();
+void i8259aint10();
+void i8259aint11();
+void i8259aint12();
+void i8259aint13();
+void i8259aint14();
+void i8259aint15();
+
 
 void exception_handler(u32 vec_no, u32 err_code, int eip, int cs, int eflags)
 {
@@ -68,6 +87,13 @@ void exception_handler(u32 vec_no, u32 err_code, int eip, int cs, int eflags)
 	 }
 }
 
+void i8259a_irq(int irq)
+{
+	 disp_str("recvice irq: ");
+	 disp_int(irq);
+	 disp_str("\n");
+}
+
 static void init_idt_desc(u8 vector, u8 desc_type,
 						  int_handler handler, u8 privilege)
 {
@@ -82,7 +108,7 @@ static void init_idt_desc(u8 vector, u8 desc_type,
 
 void init_idt()
 {
-	 init_8259();
+	 init_i8259a();
 
 	 init_idt_desc(INT_VECTOR_DIVIDE, DA_386IGate,
 				   divide_error, PRIVILEGE_KERNEL);
@@ -116,4 +142,37 @@ void init_idt()
 				   page_fault, PRIVILEGE_KERNEL);
 	 init_idt_desc(INT_VECTOR_COPROC_ERR, DA_386IGate,
 				   copr_error, PRIVILEGE_KERNEL);
+	 /* 8259a interrupt request handler */
+	 init_idt_desc(INT_VECTOR_IRQ0, DA_386IGate,
+				   i8259aint00, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 1, DA_386IGate,
+				   i8259aint01, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 2, DA_386IGate,
+				   i8259aint02, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 3, DA_386IGate,
+				   i8259aint03, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 4, DA_386IGate,
+				   i8259aint04, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 5, DA_386IGate,
+				   i8259aint05, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 6, DA_386IGate,
+				   i8259aint06, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ0 + 7, DA_386IGate,
+				   i8259aint07, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8, DA_386IGate,
+				   i8259aint08, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 1, DA_386IGate,
+				   i8259aint09, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 2, DA_386IGate,
+				   i8259aint10, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 3, DA_386IGate,
+				   i8259aint11, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 4, DA_386IGate,
+				   i8259aint12, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 5, DA_386IGate,
+				   i8259aint13, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 6, DA_386IGate,
+				   i8259aint14, PRIVILEGE_KERNEL);
+	 init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate,
+				   i8259aint15, PRIVILEGE_KERNEL);
 }

@@ -1,7 +1,9 @@
+/* i8259a.c    (c) weiforrest */
+/* operation about i8259a */
 #include <const.h>
 #include <protect.h>
 
-void init_8259()
+void init_i8259a()
 {
 	 /* Master 8259 ICW1 */
 	 OUT_BYTE(INT_M_CTL, 0x11);
@@ -20,7 +22,7 @@ void init_8259()
 	 /* Slave 8259 ICW4 */
 	 OUT_BYTE(INT_S_CTLMASK, 0x1);
 	 /* Master 8259 OCW1 */
-	 OUT_BYTE(INT_M_CTLMASK, 0xff);
+	 OUT_BYTE(INT_M_CTLMASK, 0xfd);
 	 /* Slave 8259 OCW1 */
 	 OUT_BYTE(INT_S_CTLMASK, 0xff);
 }

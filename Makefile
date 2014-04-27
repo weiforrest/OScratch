@@ -24,8 +24,9 @@ BOOT		= Boot/boot.bin
 LOAD		= Boot/load.bin
 BOOT_OBJ	= $(BOOT) $(LOAD)
 KERNEL		= kernel.bin
-KERNEL_OBJ	= Kernel/kernel.o Kernel/start.o Kernel/i8259.o \
-Lib/string.o Lib/klib.o Lib/kliba.o Kernel/protect.o Kernel/global.o 
+KERNEL_OBJ	= Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
+Lib/string.o Lib/klib.o Lib/kliba.o Kernel/protect.o Kernel/global.o \
+Kernel/interrupt.o
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
 DASMOUT		= ndisasm.asm
@@ -76,7 +77,7 @@ $(KERNEL): $(KERNEL_OBJ)
 Kernel/start.o:	Include/const.h Include/types.h Include/proto.h \
 		Include/protect.h Include/global.h
 
-Kernel/i8259.o: Include/const.h Include/types.h Include/proto.h \
+Kernel/i8259a.o: Include/const.h Include/types.h Include/proto.h \
 		Include/protect.h Include/global.h
 
 Kernel/protect.o: Include/const.h Include/types.h Include/proto.h \
@@ -86,6 +87,9 @@ Kernel/global.o: Include/const.h Include/types.h Include/protect.h\
 			Include/global.h
 
 Kernel/kernel.o: Kernel/kernel.asm
+	$(ASM) $(KASMFLAGS) $@ $<
+
+Kernel/interrupt.o: Kernel/interrupt.asm
 	$(ASM) $(KASMFLAGS) $@ $<
 
 Lib/string.o: Lib/string.asm

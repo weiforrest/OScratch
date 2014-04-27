@@ -1,3 +1,5 @@
+/* const.h    (c) weiforrest */
+/* constant about OSCRATCH */
 #ifndef __OSCRATCH_CONST_H_
 #define __OSCRATCH_CONST_H_
 

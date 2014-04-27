@@ -1,3 +1,5 @@
+/* start.c    (c) weiforrest */
+/* init the kernel environment */
 #include <const.h>
 #include <types.h>
 #include <protect.h>
