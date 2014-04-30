@@ -7,4 +7,5 @@ typedef unsigned int u32;
 
 typedef void (*int_handler) ();
 
+
 #endif	/* __OSCRATCH_TYPES_H_ */

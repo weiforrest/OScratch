@@ -1,27 +1,56 @@
 /* protect.h   (c) weiforrest */
 /* defintion about protect mode  */
-#ifndef __OSCRATCH_PROTECT_H
-#define __OSCRATCH_PROTECT_H
+#ifndef __OSCRATCH_PROTECT_H_
+#define __OSCRATCH_PROTECT_H_
 
 #include <types.h>
 
+#pragma pack (1)
 typedef struct{
 	 u16 limit_low;
 	 u16 base_low;
 	 u8 base_mid;
-	 u8 attr;
-	 u8 limit_high_attr;
-	 u8 base_hith;
+	 u16 attr;
+	 u8 base_high;
 }DESCRIPTOR;
+
 
 typedef struct{
 	 u16 offset_low;
-	 u16 selector;
-	 u8 dcount;
-	 u8 attr;
 	 u16 offset_high;
+	 u16 selector;
+	 u16 dcount_attr;
 }GATE;
+#pragma pack ()
 
+typedef struct {
+	 u32 task_link;
+	 u32 esp0;
+	 u32 ss0;
+	 u32 esp1;
+	 u32 ss1;
+	 u32 esp2;
+	 u32 ss2;
+	 u32 gr3;
+	 u32 eip;
+	 u32 eflags;
+	 u32 eax;					/* pushad begin */
+	 u32 ecx;
+	 u32 edx;
+	 u32 ebx;
+	 u32 esp;
+	 u32 ebp;
+	 u32 esi;
+	 u32 edi;					/* pushad end */
+	 u32 es;
+	 u32 cs;
+	 u32 ss;
+	 u32 ds;
+	 u32 fs;
+	 u32 gs;
+	 u32 ldt;
+	 u32 dtrap_iomap;
+}TSS;
 
 #define OUT_BYTE(port, value)\
 		  __asm__ volatile ("outb %%al,%%dx\n"	\
@@ -37,10 +66,33 @@ __asm__ volatile ("inb %%dx,%%al\n"				\
 				  :"=a"(_v):"d"(port));					\
 _v;})
 
+void exception_handler (u32, u32, int, int, u32);
+void i8259a_irq(int);
+void init_idt();
+void init_desc(DESCRIPTOR * desc, u32 base, u32 limit, u16 attr);
+void init_gate(GATE * gate, u32 base, u16 selector, u8 dcount, u8 attr);
+void init_i8259a();
+/************************/
 /* descriptor attribute */
+/************************/
+
 #define DA_32 0x4000
 #define DA_LIMIT_4K 0x8000
+/* descriptor request privilege level */
+#define DA_DPL0 0x00
+#define DA_DPL1 0x20
+#define DA_DPL2 0x40
+#define DA_DPL3 0x60
 
+/* date segment attribute */
+#define DA_DR 0x90
+#define DA_DRW 0x92
+#define DA_DRWA 0x93
+#define DA_C 0x98
+#define DA_CR 0x9A
+#define DA_CCO 0x9C
+#define DA_CCOR 0x9E
+/* system segment attribute */
 #define DA_LDT		0x82
 #define DA_TaskGate 0x85
 #define DA_386TSS	0x89
@@ -51,6 +103,7 @@ _v;})
 /* privilege level */
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 3
+
 /* interrupt vector */
 #define INT_VECTOR_DIVIDE 0x0
 #define INT_VECTOR_DEBUG 0x1
@@ -72,4 +125,8 @@ _v;})
 #define INT_VECTOR_IRQ0 0x20
 #define INT_VECTOR_IRQ8 0x28
 
-#endif	/* __OSCRATCH_PROTECT_H */
+/* task state */
+#define TASK_STATE_READY 1
+#define TASK_STATE_SLEEP 2
+#define TASK_STATE_WAIT 3
+#endif	/* __OSCRATCH_PROTECT_H_ */

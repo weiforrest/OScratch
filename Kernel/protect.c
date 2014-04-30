@@ -41,7 +41,7 @@ void i8259aint14();
 void i8259aint15();
 
 
-void exception_handler(u32 vec_no, u32 err_code, int eip, int cs, int eflags)
+void exception_handler(u32 vec_no, u32 err_code, int eip, int cs, u32 eflags)
 {
 	 char *err_msg[] = {"#DE Divide Error",
 						"#DB RESERVED",
@@ -102,8 +102,7 @@ static void init_idt_desc(u8 vector, u8 desc_type,
 	 p_gate->offset_low = base & 0xffff;
 	 p_gate->offset_high =  (base >> 16) & 0xffff;
 	 p_gate->selector = SELECTOR_KERNEL_CS;
-	 p_gate->dcount = 0;
-	 p_gate->attr = desc_type | (privilege << 5);
+	 p_gate->dcount_attr = ((desc_type | (privilege << 5))<< 8) & 0xff00;
 }
 
 void init_idt()
@@ -175,4 +174,21 @@ void init_idt()
 				   i8259aint14, PRIVILEGE_KERNEL);
 	 init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate,
 				   i8259aint15, PRIVILEGE_KERNEL);
+}
+
+void init_desc(DESCRIPTOR * desc, u32 base, u32 limit, u16 attr)
+{
+	 desc->limit_low = limit & 0xffff;
+	 desc->base_low = base & 0xffff;
+	 desc->base_mid = (base >> 16) & 0xff;
+	 desc->attr = (attr & 0xf0ff) | ((limit >> 8) & 0x0f00);
+	 desc->base_high = (base >> 24) & 0xff;
+}
+
+void init_gate(GATE * gate, u32 base, u16 selector, u8 dcount, u8 attr)
+{
+	 gate->offset_low = base & 0xffff;
+	 gate->selector = selector;
+	 gate->dcount_attr = (dcount & 0x1f) | ((attr << 8) & 0xff00);
+	 gate->offset_high = (base >> 16) & 0xffff;
 }

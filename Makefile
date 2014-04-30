@@ -14,8 +14,8 @@ CC			= gcc
 #FLAGS
 BASMFLAGS	= -I Boot/Include/ -o
 KASMFLAGS	= -f elf -o 
-CFLAGS		= -c -m32 -nostdinc -I Include/ -fno-builtin -fno-stack-protector -o 
-KLDFLAGS	= -m elf_i386 -s -Ttext $(ENTRYPOINT) -o
+CFLAGS		= -c -m32 -nostdinc -g -Wall -I Include/ -fno-builtin -fno-stack-protector -o 
+KLDFLAGS	= -m elf_i386 -Ttext $(ENTRYPOINT) -o
 BOOTDASMFLAGS	= -o 0x7c00 -s 0x7c3e
 KERNELDASMFLAGS = -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
@@ -24,9 +24,10 @@ BOOT		= Boot/boot.bin
 LOAD		= Boot/load.bin
 BOOT_OBJ	= $(BOOT) $(LOAD)
 KERNEL		= kernel.bin
+KERNEL_STRIP= kernel.bin.stripped
 KERNEL_OBJ	= Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
 Lib/string.o Lib/klib.o Lib/kliba.o Kernel/protect.o Kernel/global.o \
-Kernel/interrupt.o
+Kernel/interrupt.o Kernel/task.o
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
 DASMOUT		= ndisasm.asm
@@ -49,14 +50,16 @@ everything: $(BOOT) $(LOAD) $(KERNEL)
 
 # build image
 bulidimg: 
-	rm -rf $(IMGNAME)
-	bximage -q -fd -size=1.44 $(IMGNAME) 
-	dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
+	@rm -rf $(IMGNAME)
+	@bximage -q -fd -size=1.44 $(IMGNAME) 
+	@dd if=$(BOOT) of=$(IMGNAME) bs=512 count=1 conv=notrunc
 	@test -d $(TMPDIR) || mkdir $(TMPDIR)
-	mount -o loop $(IMGNAME) $(TMPDIR)
-	@cp $(LOAD) $(KERNEL) $(TMPDIR) -v
+	@mount -o loop $(IMGNAME) $(TMPDIR)
+	@cp $(LOAD) $(TMPDIR) -v
+	@strip $(KERNEL) -o $(KERNEL_STRIP)
+	@cp $(KERNEL_STRIP) $(TMPDIR)/$(KERNEL) -v
 	@sleep 1
-	umount $(TMPDIR)
+	@umount $(TMPDIR)
 
 bootdisasm:
 	@rm -rf $(DASMOUT)
@@ -65,7 +68,8 @@ kdisasm:
 	@rm -rf $(DASMOUT)
 	$(DASM) $(KERNELDASMFLAGS) $(KERNEL) > $(DASMOUT)
 clean:
-	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL) $(KERNEL_OBJ)
+	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL)\
+		$(KERNEL_OBJ) $(KERNEL_STRIP)
 
 $(BOOT_OBJ): %.bin: %.asm
 	$(ASM) $(BASMFLAGS) $@ $<
@@ -85,6 +89,9 @@ Kernel/protect.o: Include/const.h Include/types.h Include/proto.h \
 
 Kernel/global.o: Include/const.h Include/types.h Include/protect.h\
 			Include/global.h
+
+Kernel/task.o:	Include/const.h Include/types.h Include/proto.h\
+			Include/protect.h
 
 Kernel/kernel.o: Kernel/kernel.asm
 	$(ASM) $(KASMFLAGS) $@ $<

@@ -294,10 +294,9 @@ CloseFloppy:
 [SECTION .gdt]
 ;; GDT
 LABEL_GDT:			Descriptor			0,			    	0,			0 		; The NULL DESC
-LABEL_DESC_NORMAL:	Descriptor			0,   		   0xffff,	DA_DRW		 	; Normal DESC
-LABEL_DESC_VIDEO:	Descriptor	  0xb8000,	 		   0xffff,  DA_DRW			; Display Memory DESC
-LABEL_DESC_FLATRW:	Descriptor 			0,			  0xfffff,	DA_DRW | DA_LIMIT_4K | DA_32
 LABEL_DESC_FLATC:	Descriptor			0,			  0xfffff,	DA_C | DA_CR | DA_LIMIT_4K | DA_32
+LABEL_DESC_FLATRW:	Descriptor 			0,			  0xfffff,	DA_DRW | DA_LIMIT_4K | DA_32
+LABEL_DESC_VIDEO:	Descriptor	  0xb8000,	 		   0xffff,  DA_DRW			; Display Memory DESC
 ;;; END of GDT
 
 GdtLen	equ	$ - LABEL_GDT
@@ -305,10 +304,9 @@ GdtPtr	dw	GdtLen - 1
 		dd 0
 
 ;;; GDT Selectors
-SelectorNormal	equ LABEL_DESC_NORMAL - LABEL_GDT
-SelectorVideo	equ	LABEL_DESC_VIDEO - LABEL_GDT
 SelectorFLATC equ LABEL_DESC_FLATC - LABEL_GDT
 SelectorFLATRW equ LABEL_DESC_FLATRW - LABEL_GDT
+SelectorVideo	equ	LABEL_DESC_VIDEO - LABEL_GDT
 ;;; END of Selectors
 
 [SECTION .idt]
