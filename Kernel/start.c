@@ -33,25 +33,30 @@ void cstart()
 void setup_task()
 {
 	 p_task_ready = task_table;
-	 p_task_ready->pid = p_task_ready - task_table;
-	 p_task_ready->privilege = 100;
-	 p_task_ready->counter = 100;
-	 p_task_ready->state = TASK_STATE_READY;
+	 p_task_ready->task.pid = p_task_ready - task_table;
+	 p_task_ready->task.privilege = 100;
+	 p_task_ready->task.counter = 100;
+	 p_task_ready->task.state = TASK_STATE_READY;
 	 /* add task ldt and tss desc to gdt */
-	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->ldt,
+	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->task.ldt,
 			   sizeof(DESCRIPTOR)*3 - 1, DA_LDT);
-	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->tss,
+	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->task.tss,
 			   sizeof(TSS) - 1, DA_386TSS);
 	 /* init the ldt */
-	 memcpy(&p_task_ready->ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->ldt[0].attr = DA_C | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->ldt[0].attr & 0x0f00);
+	 memcpy(&p_task_ready->task.ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
+	 p_task_ready->task.ldt[0].attr = DA_C | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->task.ldt[0].attr & 0x0f00);
 	 
-	 memcpy(&p_task_ready->ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->ldt[1].attr |= DA_DRW | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->ldt[1].attr & 0x0f00);
+	 memcpy(&p_task_ready->task.ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3], sizeof(DESCRIPTOR));
+	 p_task_ready->task.ldt[1].attr |= DA_DRW | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->task.ldt[1].attr & 0x0f00);
 
-	 memcpy(&p_task_ready->ldt[2], &gdt[SELECTOR_KERNEL_GS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->ldt[2].attr |= DA_DRW | PRIVILEGE_USER << 5 | (p_task_ready->ldt[2].attr & 0x0f00);
- 
+	 memcpy(&p_task_ready->task.ldt[2], &gdt[SELECTOR_KERNEL_GS >> 3], sizeof(DESCRIPTOR));
+	 p_task_ready->task.ldt[2].attr |= DA_DRW | PRIVILEGE_USER << 5 | (p_task_ready->task.ldt[2].attr & 0x0f00);
+
+	 p_task_ready->task.tss.ss0 = SELECTOR_KERNEL_DS;
+	 p_task_ready->task.tss.esp0 = (u32)p_task_ready + PAGE_SIZE;
+	 p_task_ready->task.tss.ldt = 0x20;
+	 p_task_ready->task.tss.dtrap_iomap = 0x8000000;
+	 
 }
 
 

@@ -17,9 +17,9 @@ typedef struct{
 
 typedef struct{
 	 u16 offset_low;
-	 u16 offset_high;
 	 u16 selector;
 	 u16 dcount_attr;
+	 u16 offset_high;
 }GATE;
 #pragma pack ()
 

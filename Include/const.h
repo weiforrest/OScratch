@@ -17,6 +17,8 @@
 /* max task size */
 #define TASK_SIZE 64
 
+#define PAGE_SIZE 4096
+
 /* 8259a interrupt controller ports */
 #define INT_M_CTL 0x20
 #define INT_S_CTL 0xa0

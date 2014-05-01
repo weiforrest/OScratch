@@ -32,7 +32,7 @@ _start:
 		lidt	[idt_ptr]
 		jmp SELECTOR_KERNEL_CS:csinit
 csinit:
-		;; sti
+		sti
 		mov ax, 0x28
 		ltr ax
 		mov ax, 0x20

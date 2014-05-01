@@ -43,7 +43,7 @@ DASMOUT		= ndisasm.asm
 
 # the default starting postion
 # create the final image
-image:  everything bulidimg
+image:  clean everything bulidimg
 
 # create all 
 everything: $(BOOT) $(LOAD) $(KERNEL)
@@ -64,9 +64,11 @@ bulidimg:
 bootdisasm:
 	@rm -rf $(DASMOUT)
 	$(DASM) $(BOOTDASMFLAGS) $(BOOT) > $(DASMOUT)
+
 kdisasm:
 	@rm -rf $(DASMOUT)
 	$(DASM) $(KERNELDASMFLAGS) $(KERNEL) > $(DASMOUT)
+
 clean:
 	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL)\
 		$(KERNEL_OBJ) $(KERNEL_STRIP)
