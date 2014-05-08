@@ -5,19 +5,21 @@
 #include <const.h>
 #include <protect.h>
 
-struct task_struct{
-u32 state; 						
-u32 privilege;
-u32 counter;
-u32 pid;
-DESCRIPTOR ldt[3];
-TSS tss;
+struct proc_struct{
+	 REGS regs;
+	 u32 ldt_sel;				/* 68 */
+	 DESCRIPTOR ldt[3];			/* 72 */
+	 u32 state; 						
+	 u32 privilege;
+	 u32 counter;
+	 u32 pid;
+	 u8 name[16];
 };
 
 typedef union{
-	 struct task_struct task;
+	 struct proc_struct proc;
 	 char stack[PAGE_SIZE];
-}TASK;
+}PROC;
 
 
 

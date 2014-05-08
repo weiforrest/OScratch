@@ -3,20 +3,23 @@
 #include <const.h>
 #include <types.h>
 #include <protect.h>
-#include <proto.h>
+#include <userlib.h>
 
 void taska()
 {
+	 char *p = "A";
 	 while(1){
-		  disp_str("A");
+		  print(p);
 		  delay(10);
+		  /* (*p)++; */
 	 }
 }
 
 void taskb()
 {
+	 char *p = "B";
 	 while(1){
-		  disp_str("B");
+		  print(p);
 		  delay(10);
 	 }
 }

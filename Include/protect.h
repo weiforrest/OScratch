@@ -3,6 +3,7 @@
 #ifndef __OSCRATCH_PROTECT_H_
 #define __OSCRATCH_PROTECT_H_
 
+#include <const.h>
 #include <types.h>
 
 #pragma pack (1)
@@ -52,6 +53,26 @@ typedef struct {
 	 u32 dtrap_iomap;
 }TSS;
 
+typedef struct {
+	 u32 gs;
+	 u32 fs;
+	 u32 es;
+	 u32 ds;
+	 u32 edi;
+	 u32 esi;
+	 u32 ebp;
+	 u32 kernel_esp;
+	 u32 ebx;
+	 u32 edx;
+	 u32 ecx;
+	 u32 eax;
+	 u32 eip;
+	 u32 cs;
+	 u32 eflags;
+	 u32 esp;
+	 u32 ss;
+}REGS;
+
 #define OUT_BYTE(port, value)\
 		  __asm__ volatile ("outb %%al,%%dx\n"	\
 							"nop\n"				\
@@ -65,6 +86,7 @@ __asm__ volatile ("inb %%dx,%%al\n"				\
 				  "nop\n"								\
 				  :"=a"(_v):"d"(port));					\
 _v;})
+#define SET_EOI OUT_BYTE(INT_M_CTL, EOI)
 
 void exception_handler (u32, u32, int, int, u32);
 void i8259a_irq(int);
@@ -72,6 +94,7 @@ void init_idt();
 void init_desc(DESCRIPTOR * desc, u32 base, u32 limit, u16 attr);
 void init_gate(GATE * gate, u32 base, u16 selector, u8 dcount, u8 attr);
 void init_i8259a();
+void init_tss();
 /************************/
 /* descriptor attribute */
 /************************/
@@ -104,6 +127,13 @@ void init_i8259a();
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 3
 
+/* selector attribute */
+#define SA_RPL0 0
+#define SA_RPL1 1
+#define SA_RPL2 2
+#define SA_RPL3 3
+#define SA_TIL 4
+
 /* interrupt vector */
 #define INT_VECTOR_DIVIDE 0x0
 #define INT_VECTOR_DEBUG 0x1
@@ -125,8 +155,10 @@ void init_i8259a();
 #define INT_VECTOR_IRQ0 0x20
 #define INT_VECTOR_IRQ8 0x28
 
+#define INT_VECTOR_SYSCALL 0x80
+
 /* task state */
-#define TASK_STATE_READY 1
-#define TASK_STATE_SLEEP 2
-#define TASK_STATE_WAIT 3
+#define PROC_STATE_READY 1
+#define PROC_STATE_SLEEP 2
+#define PROC_STATE_WAIT 3
 #endif	/* __OSCRATCH_PROTECT_H_ */

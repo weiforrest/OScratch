@@ -16,8 +16,8 @@ EXTERN u8 gdt_ptr[6];
 EXTERN DESCRIPTOR gdt[GDT_SIZE];
 EXTERN u8 idt_ptr[6];
 EXTERN GATE idt[IDT_SIZE];
+EXTERN TSS tss;					/* global tss for all process */
 EXTERN int enable_gdt_entry;			/* record the aviliable gdt entry */
-EXTERN TASK * p_task_ready;
-EXTERN TASK task_table[TASK_SIZE];
-
+EXTERN PROC * p_proc_ready;
+EXTERN PROC proc_table[PROC_SIZE];
 #endif	/* __OSCRATCH_GLOBAL_H_ */

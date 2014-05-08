@@ -6,7 +6,7 @@
 #include <proto.h>
 #include <global.h>
 
-void setup_task();
+void setup_proc0();
 void cstart()
 {
 	 disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -18,45 +18,49 @@ void cstart()
 	 *p_gdt_base = (u32)&gdt;
 	 *p_gdt_limit = GDT_SIZE * sizeof(DESCRIPTOR) - 1;
 	 /* set the first aviliable gdt entry*/
-	 enable_gdt_entry = FIRST_GDT_ENTRY;
-	 /* setup the IDT */
+	 enable_gdt_entry = FIRST_GDT_ENTRY; /* NULL, CS, DS, GS */
+	 /* setup the IDT_PTR ann idt */
 	 u16 * p_idt_limit = (u16 *)idt_ptr;
 	 u32 * p_idt_base = (u32 *)(&idt_ptr[2]);
 	 *p_idt_limit = IDT_SIZE * sizeof(GATE) - 1;
 	 *p_idt_base = (u32)&idt;
-	 
 	 init_idt();
-	 setup_task();
+	 /* setup the TSS descriptor int gdt */
+	 init_desc(&gdt[enable_gdt_entry++], (u32)&tss,
+			   sizeof(TSS) - 1, DA_386TSS);
+	 p_proc_ready = proc_table;
+	 init_tss();
+
+	 setup_proc0();
 	 disp_str("-----\"cstart\" ends-----\n");
 }
 
-void setup_task()
+void setup_proc0()
 {
-	 p_task_ready = task_table;
-	 p_task_ready->task.pid = p_task_ready - task_table;
-	 p_task_ready->task.privilege = 100;
-	 p_task_ready->task.counter = 100;
-	 p_task_ready->task.state = TASK_STATE_READY;
-	 /* add task ldt and tss desc to gdt */
-	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->task.ldt,
+	 memset(proc_table, 0, sizeof(PROC) * PROC_SIZE);
+	 p_proc_ready->proc.pid = p_proc_ready - proc_table;
+	 p_proc_ready->proc.privilege = 100;
+	 p_proc_ready->proc.counter = 100;
+	 p_proc_ready->proc.state = PROC_STATE_READY;
+	 p_proc_ready->proc.ldt_sel = (enable_gdt_entry << 3);
+	 /* add proc ldt desc to gdt */
+	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_proc_ready->proc.ldt,
 			   sizeof(DESCRIPTOR)*3 - 1, DA_LDT);
-	 init_desc(&gdt[enable_gdt_entry++], (u32)&p_task_ready->task.tss,
-			   sizeof(TSS) - 1, DA_386TSS);
-	 /* init the ldt */
-	 memcpy(&p_task_ready->task.ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->task.ldt[0].attr = DA_C | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->task.ldt[0].attr & 0x0f00);
-	 
-	 memcpy(&p_task_ready->task.ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->task.ldt[1].attr |= DA_DRW | PRIVILEGE_USER << 5 | DA_LIMIT_4K | DA_32 | (p_task_ready->task.ldt[1].attr & 0x0f00);
-
-	 memcpy(&p_task_ready->task.ldt[2], &gdt[SELECTOR_KERNEL_GS >> 3], sizeof(DESCRIPTOR));
-	 p_task_ready->task.ldt[2].attr |= DA_DRW | PRIVILEGE_USER << 5 | (p_task_ready->task.ldt[2].attr & 0x0f00);
-
-	 p_task_ready->task.tss.ss0 = SELECTOR_KERNEL_DS;
-	 p_task_ready->task.tss.esp0 = (u32)p_task_ready + PAGE_SIZE;
-	 p_task_ready->task.tss.ldt = 0x20;
-	 p_task_ready->task.tss.dtrap_iomap = 0x8000000;
-	 
+	 /* init the ldt cs*/
+	 memcpy(&p_proc_ready->proc.ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
+	 p_proc_ready->proc.ldt[0].attr |= PRIVILEGE_USER << 5;
+	 /* init the ldt ds */
+	 memcpy(&p_proc_ready->proc.ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3], sizeof(DESCRIPTOR));
+	 p_proc_ready->proc.ldt[1].attr |= PRIVILEGE_USER << 5;
+	 p_proc_ready->proc.regs.gs = SELECTOR_LDT_DS;
+	 p_proc_ready->proc.regs.fs = SELECTOR_LDT_DS;
+	 p_proc_ready->proc.regs.es = SELECTOR_LDT_DS;
+	 p_proc_ready->proc.regs.ds = SELECTOR_LDT_DS;
+	 p_proc_ready->proc.regs.eip = (u32)taska;
+	 p_proc_ready->proc.regs.cs = SELECTOR_LDT_CS;
+	 p_proc_ready->proc.regs.eflags = 0x202;
+	 p_proc_ready->proc.regs.esp = (u32)p_proc_ready + PAGE_SIZE; /* task0 kernel stack */
+	 p_proc_ready->proc.regs.ss = SELECTOR_LDT_DS;
 }
 
 

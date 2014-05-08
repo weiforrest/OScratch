@@ -22,7 +22,7 @@ void init_i8259a()
 	 /* Slave 8259 ICW4 */
 	 OUT_BYTE(INT_S_CTLMASK, 0x1);
 	 /* Master 8259 OCW1 */
-	 OUT_BYTE(INT_M_CTLMASK, 0xfd);
+	 OUT_BYTE(INT_M_CTLMASK, 0xfc); /* enable clock interrupt */
 	 /* Slave 8259 OCW1 */
 	 OUT_BYTE(INT_S_CTLMASK, 0xff);
 }

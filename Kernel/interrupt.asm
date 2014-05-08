@@ -81,6 +81,7 @@ exception:
 		call exception_handler
 		add esp, 4 * 2
 		hlt
+		iretd
 
 global i8259aint00
 global i8259aint01
@@ -98,15 +99,98 @@ global i8259aint12
 global i8259aint13
 global i8259aint14
 global i8259aint15
+global systemcall
+global ignoreint
 
 extern i8259a_irq
+extern clock_handler
+extern StackTop
+extern tss
+extern p_proc_ready
+extern disp_color_str
+		
+INT_M_CTL equ 0x20
+EOI	equ 0x20
+OFFSET_REGS_TOP equ 68
+OFFSET_SP0_TSS equ 4
+reenter00:		dd 0
+i8259aint00:					;clock	
+		pushad
+		push ds
+		push es
+		push fs
+		push gs
 
-i8259aint00:
+		mov ax, 0x18
+		mov gs, ax
+		
+		inc byte [gs:0]
+		mov al, EOI			;reenable int
+		out INT_M_CTL, al
+		
+		inc dword [reenter00]
+		cmp dword [reenter00], 1
+		jne .re_enter
+
+		mov esp, StackTop
+		sti
+		;; do some complex thing
 		push 0
-		jmp i8259aint
-i8259aint01:
-		push 1
-		jmp i8259aint
+		call clock_handler
+		add esp, 4
+		cli
+		;; switch to ready proc
+		mov esp, [p_proc_ready]
+		lea eax, [esp + OFFSET_REGS_TOP]
+		mov dword [tss + OFFSET_SP0_TSS], eax
+		
+.re_enter:
+		dec dword [reenter00]
+		pop gs
+		pop fs
+		pop es 
+		pop ds
+		popad
+		iretd
+		
+reenter01:		dd 0
+i8259aint01:					;keyboard
+		pushad
+		push ds
+		push es
+		push fs
+		push gs
+
+		mov ax, 0x18
+		mov gs, ax
+		inc byte [gs:2]
+		;; mov al, EOI			;reenable int
+		;; out INT_M_CTL, al
+		
+		inc dword [reenter01]
+		cmp dword [reenter01], 1
+		jne .re_enter
+
+		mov esp, StackTop
+		sti
+		;; do some complex thing
+		;; push 0
+		;; call clock_handler
+		;; add esp, 4
+		cli
+		mov esp, [p_proc_ready]
+		lea eax, [esp + OFFSET_REGS_TOP]
+		mov dword [tss + OFFSET_SP0_TSS], eax
+.re_enter:
+		dec dword [reenter00]
+		
+		pop gs
+		pop fs
+		pop es 
+		pop ds
+		popad
+		iretd
+		
 i8259aint02:
 		push 2
 		jmp i8259aint
@@ -152,4 +236,46 @@ i8259aint15:
 i8259aint:
 		call i8259a_irq
 		add esp, 4
-		hlt
+		iretd
+
+
+systemcall:
+		pushad
+		push ds
+		push es
+		push fs
+		push gs
+
+		mov esp, StackTop
+		push 0xf				
+		push eax
+		call disp_color_str		;disp_color_str(char *, color)
+		add esp, 4
+
+		mov esp, [p_proc_ready]
+
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd
+		
+
+ignoreint:
+		pushad
+		push ds
+		push es
+		push fs
+		push gs
+		
+		mov ax, 0x18
+		mov gs, ax
+		inc byte [gs:2]
+
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd

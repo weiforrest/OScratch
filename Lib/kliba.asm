@@ -1,6 +1,7 @@
 extern disp_pos
 [SECTION .text]
 
+SELECTOR_KERNEL_GS equ 0x18
 global disp_color_str
 global itoa
 
@@ -9,8 +10,12 @@ disp_color_str:
 		push ebp
 		mov ebp, esp
 
+		push gs
 		push esi
 		push edi
+
+		mov ax, SELECTOR_KERNEL_GS
+		mov gs, ax
 		
 		mov esi, [ebp + 8]		;
 		mov edi, [disp_pos]
@@ -35,14 +40,15 @@ disp_color_str:
 		pop eax
 		jmp .1
 .2:
-		mov [gs:edi], ax
+		mov word [gs:edi], ax
 		add edi, 2
 		jmp .1
 .done:
-		mov [disp_pos], edi
+		mov dword [disp_pos], edi
 
 		pop edi
 		pop esi
+		pop gs
 		pop ebp
 		ret
 

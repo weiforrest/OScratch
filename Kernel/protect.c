@@ -39,7 +39,8 @@ void i8259aint12();
 void i8259aint13();
 void i8259aint14();
 void i8259aint15();
-
+void systemcall();
+void ignoreint();
 
 void exception_handler(u32 vec_no, u32 err_code, int eip, int cs, u32 eflags)
 {
@@ -92,6 +93,7 @@ void i8259a_irq(int irq)
 	 disp_str("recvice irq: ");
 	 disp_int(irq);
 	 disp_str("\n");
+	 OUT_BYTE(INT_M_CTL, EOI);
 }
 
 static void init_idt_desc(u8 vector, u8 desc_type,
@@ -108,7 +110,6 @@ static void init_idt_desc(u8 vector, u8 desc_type,
 void init_idt()
 {
 	 init_i8259a();
-
 	 init_idt_desc(INT_VECTOR_DIVIDE, DA_386IGate,
 				   divide_error, PRIVILEGE_KERNEL);
 	 init_idt_desc(INT_VECTOR_DEBUG, DA_386IGate,
@@ -141,6 +142,11 @@ void init_idt()
 				   page_fault, PRIVILEGE_KERNEL);
 	 init_idt_desc(INT_VECTOR_COPROC_ERR, DA_386IGate,
 				   copr_error, PRIVILEGE_KERNEL);
+	 int i;
+	 for(i = 0x10; i< 0x20;i++){
+		  init_idt_desc(i, DA_386IGate,
+						ignoreint, PRIVILEGE_KERNEL);
+	 }
 	 /* 8259a interrupt request handler */
 	 init_idt_desc(INT_VECTOR_IRQ0, DA_386IGate,
 				   i8259aint00, PRIVILEGE_KERNEL);
@@ -174,6 +180,16 @@ void init_idt()
 				   i8259aint14, PRIVILEGE_KERNEL);
 	 init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate,
 				   i8259aint15, PRIVILEGE_KERNEL);
+	 for(i = 0x30; i< INT_VECTOR_SYSCALL; i++){
+		  init_idt_desc(i, DA_386IGate,
+						ignoreint, PRIVILEGE_KERNEL);
+	 }
+	 init_idt_desc(INT_VECTOR_SYSCALL, DA_386TGate, /* system call is int 0x80 */
+				   systemcall, PRIVILEGE_USER);
+	 for(i = INT_VECTOR_SYSCALL+1; i<IDT_SIZE ;i++){
+		  init_idt_desc(i, DA_386IGate,
+						ignoreint, PRIVILEGE_KERNEL);
+	 }
 }
 
 void init_desc(DESCRIPTOR * desc, u32 base, u32 limit, u16 attr)
@@ -191,4 +207,13 @@ void init_gate(GATE * gate, u32 base, u16 selector, u8 dcount, u8 attr)
 	 gate->selector = selector;
 	 gate->dcount_attr = (dcount & 0x1f) | ((attr << 8) & 0xff00);
 	 gate->offset_high = (base >> 16) & 0xffff;
+}
+
+void init_tss()
+{
+	 memset(&tss, 0, sizeof(TSS));
+	 tss.ss0 = SELECTOR_KERNEL_DS;
+	 tss.esp0 = (u32)p_proc_ready + REGS_TOP; /* REGS in PROC info region */
+	 tss.ldt = SELECTOR_FIRST_LDT;
+	 tss.dtrap_iomap = 0x8000000;
 }
