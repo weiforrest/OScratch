@@ -19,7 +19,7 @@
 
 #define PAGE_SIZE 4096
 
-#define REGS_TOP 68
+#define OFFSET_REGS_TOP 68
 
 /* 8259a interrupt controller ports */
 #define INT_M_CTL 0x20

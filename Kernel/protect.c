@@ -213,7 +213,7 @@ void init_tss()
 {
 	 memset(&tss, 0, sizeof(TSS));
 	 tss.ss0 = SELECTOR_KERNEL_DS;
-	 tss.esp0 = (u32)p_proc_ready + REGS_TOP; /* REGS in PROC info region */
+	 tss.esp0 = (u32)p_proc_ready + OFFSET_REGS_TOP; /* REGS in PROC info region */
 	 tss.ldt = SELECTOR_FIRST_LDT;
 	 tss.dtrap_iomap = 0x8000000;
 }

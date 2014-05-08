@@ -1,8 +1,6 @@
 ;;; kernel.asm		(c) 2014 weiforrest
 ;;;
-SELECTOR_KERNEL_CS	equ 0x8
-SELECTOR_TSS		equ 0x20
-OFFSET_LDT_PROC		equ 68 
+%include "const.inc"
 ;;; extern function
 extern cstart
 ;;; extern global variable

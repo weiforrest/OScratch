@@ -13,7 +13,7 @@ CC			= gcc
 
 #FLAGS
 BASMFLAGS	= -I Boot/Include/ -o
-KASMFLAGS	= -f elf -o 
+KASMFLAGS	= -f elf -I Include/ -o 
 CFLAGS		= -c -m32 -nostdinc -g -Wall -I Include/ -fno-builtin -fno-stack-protector -o 
 KLDFLAGS	= -m elf_i386 -Ttext $(ENTRYPOINT) -o
 BOOTDASMFLAGS	= -o 0x7c00 -s 0x7c3e

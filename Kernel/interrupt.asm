@@ -1,5 +1,7 @@
 ;;; interrupt.asm	(c)weiforrest
 ;;; all interrupt handler entry
+%include "const.inc"
+
 extern exception_handler
 ;;; interrupt handler
 global divide_error
@@ -109,10 +111,8 @@ extern tss
 extern p_proc_ready
 extern disp_color_str
 		
-INT_M_CTL equ 0x20
-EOI	equ 0x20
-OFFSET_REGS_TOP equ 68
-OFFSET_SP0_TSS equ 4
+
+
 reenter00:		dd 0
 i8259aint00:					;clock	
 		pushad

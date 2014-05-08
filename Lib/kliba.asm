@@ -1,7 +1,8 @@
+%include "const.inc"
+
 extern disp_pos
 [SECTION .text]
 
-SELECTOR_KERNEL_GS equ 0x18
 global disp_color_str
 global itoa
 
