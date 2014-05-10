@@ -4,8 +4,9 @@
 
 #include <const.h>
 
-void print(char *);
 
+void print(char *);
+void print_int(int);
 
 
 

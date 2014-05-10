@@ -11,5 +11,3 @@ print:
 
 		pop ebp
 		ret
-
-		

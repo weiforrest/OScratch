@@ -25,7 +25,7 @@ LOAD		= Boot/load.bin
 BOOT_OBJ	= $(BOOT) $(LOAD)
 KERNEL		= kernel.bin
 KERNEL_STRIP= kernel.bin.stripped
-LIB_OBJ = Lib/string.o Lib/klib.o Lib/kliba.o Lib/userliba.o
+LIB_OBJ = Lib/string.o Lib/klib.o Lib/kliba.o Lib/userliba.o Lib/userlib.o
 KERNEL_OBJ = Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
 				Kernel/protect.o Kernel/global.o Kernel/interrupt.o \
 				Kernel/task.o Kernel/sched.o $(LIB_OBJ)
@@ -95,12 +95,13 @@ Kernel/global.o: Include/const.h Include/types.h Include/protect.h\
 			Include/global.h
 
 Kernel/task.o:	Include/const.h Include/types.h Include/proto.h\
-			Include/protect.h
+			Include/protect.h Include/userlib.h
 
 Kernel/sched.o: Include/const.h Include/proto.h Include/global.h
 
 Lib/klib.o:  Include/proto.h
 
+Lib/userlib.o: Include/proto.h Include/userlib.h
 
 # .asm to .o
 Kernel/kernel.o: Kernel/kernel.asm
