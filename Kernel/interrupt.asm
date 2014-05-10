@@ -101,7 +101,6 @@ global i8259aint12
 global i8259aint13
 global i8259aint14
 global i8259aint15
-global systemcall
 global ignoreint
 
 extern i8259a_irq
@@ -239,27 +238,6 @@ i8259aint:
 		iretd
 
 
-systemcall:
-		pushad
-		push ds
-		push es
-		push fs
-		push gs
-
-		mov esp, StackTop
-		push 0xf				
-		push eax
-		call disp_color_str		;disp_color_str(char *, color)
-		add esp, 4
-
-		mov esp, [p_proc_ready]
-
-		pop gs
-		pop fs
-		pop es
-		pop ds
-		popad
-		iretd
 		
 
 ignoreint:

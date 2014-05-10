@@ -8,9 +8,10 @@
 void taska()
 {
 	 char *p = "A";
+	 
 	 while(1){
 		  print(p);
-		  delay(10);
+		  delay(1);
 		  /* (*p)++; */
 	 }
 }
@@ -20,6 +21,6 @@ void taskb()
 	 char *p = "B";
 	 while(1){
 		  print(p);
-		  delay(10);
+		  delay(1);
 	 }
 }

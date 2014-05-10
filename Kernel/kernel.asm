@@ -3,10 +3,11 @@
 %include "const.inc"
 ;;; extern function
 extern cstart
+extern disp_color_str
+
 ;;; extern global variable
 extern gdt_ptr
 extern idt_ptr
-extern disp_str
 extern disp_pos
 extern p_proc_ready
 global StackTop
@@ -17,8 +18,7 @@ StackTop:
 [SECTION .text]
 		
 global _start
-
-
+global systemcall
 _start:
 		mov esp, StackTop
 		mov dword [disp_pos], 0
@@ -41,3 +41,33 @@ csinit:
 		popad
 		iretd
 
+
+systemcall:
+		pushad
+		push ds
+		push es
+		push fs
+		push gs
+
+		mov esp, StackTop
+		cmp eax, 1
+		je .disp
+
+
+.disp:
+		push 0xf				
+		push ebx
+		call disp_color_str		;disp_color_str(char *, color)
+		add esp, 4
+
+
+
+		
+		mov esp, [p_proc_ready]
+
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd
