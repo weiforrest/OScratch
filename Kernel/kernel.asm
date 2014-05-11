@@ -51,10 +51,10 @@ systemcall:
 
 		mov esp, StackTop
 		cmp eax, 1
-		je .disp
+		je .sys_disp
 
 
-.disp:
+.sys_disp:
 		push 0xf				
 		push ebx
 		call disp_color_str		;disp_color_str(char *, color)

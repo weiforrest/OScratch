@@ -46,7 +46,7 @@ void setup_proc()
 		  p_proc_ready->proc.counter = 10;
 		  p_proc_ready->proc.state = PROC_STATE_READY;
 		  p_proc_ready->proc.ldt_sel = (enable_gdt_entry << 3);
-	 /* add proc ldt desc to gdt */
+		  /* add proc ldt desc to gdt */
 		  init_desc(&gdt[enable_gdt_entry++], (u32)&p_proc_ready->proc.ldt,
 					sizeof(DESCRIPTOR)*3 - 1, DA_LDT);
 		  /* init the ldt cs*/

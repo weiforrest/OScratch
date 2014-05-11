@@ -8,7 +8,7 @@
 void clock_handler()
 {
 	 /* disp_str("#"); */
-	 /* delay(10); */
+	 delay(1);
 	 if(!--(p_proc_ready->proc.counter)){
 		  p_proc_ready->proc.counter = 10;
 		  p_proc_ready++;

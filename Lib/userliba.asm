@@ -1,4 +1,5 @@
-
+;;; userliba.asm   (c) weiforrest
+		
 global print
 
 print:

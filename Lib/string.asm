@@ -1,3 +1,4 @@
+;;; string.asm   (c) weiforrest
 [SECTION .text]
 
 ;;; void* memcpy(void* dest, void* src, int isize);
@@ -26,6 +27,7 @@ memcpy:
 		pop edi
 		pop ebp
 		ret
+		
 ;;; void* memset(void *dest, u8, u32 size);
 global memset
 

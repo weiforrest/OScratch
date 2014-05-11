@@ -10,14 +10,13 @@ ASM			= nasm
 DASM		= ndisasm
 LD			= ld
 CC			= gcc
-
+DUMP		= objdump			#使用objdump 反汇编 比ndisasm 更加好用
 #FLAGS
 BASMFLAGS	= -I Boot/Include/ -o
 KASMFLAGS	= -f elf -I Include/ -o 
-CFLAGS		= -c -m32 -nostdinc -g -Wall -I Include/ -fno-builtin -fno-stack-protector -o 
+CFLAGS		= -c -m32 -nostdinc -g -Wall -I Include/ -fno-builtin -fno-stack-protector -o # 不使用内置的优化，和堆栈保护检测
 KLDFLAGS	= -m elf_i386 -Ttext $(ENTRYPOINT) -o
-BOOTDASMFLAGS	= -o 0x7c00 -s 0x7c3e
-KERNELDASMFLAGS = -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
+DASMFLAGS	= -o 0x7c00 -s 0x7c3e #反汇编BOOT
 
 # Targets
 BOOT		= Boot/boot.bin
@@ -33,7 +32,7 @@ KERNEL_OBJ = Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
 DASMOUT		= ndisasm.asm
-
+DUMPOUT		= kernel.dump
 .asm.o:
 	$(ASM) $(KASMFLAGS) $@ $<
 
@@ -65,15 +64,15 @@ bulidimg:
 
 bootdisasm:
 	@rm -rf $(DASMOUT)
-	$(DASM) $(BOOTDASMFLAGS) $(BOOT) > $(DASMOUT)
+	$(DASM) $(DASMFLAGS) $(BOOT) > $(DASMOUT)
 
-kdisasm:
-	@rm -rf $(DASMOUT)
-	$(DASM) $(KERNELDASMFLAGS) $(KERNEL) > $(DASMOUT)
+dumpkernel:
+	@rm -rf $(DUMPOUT)
+	$(DUMP) -m intel -d $(KERNEL) > $(DUMPOUT)
 
 clean:
 	rm -f $(BOOT) $(LOAD) $(IMGNAME) $(DASMOUT) $(KERNEL)\
-		$(KERNEL_OBJ) $(KERNEL_STRIP)
+		$(KERNEL_OBJ) $(KERNEL_STRIP) $(DUMPOUT)
 
 $(BOOT_OBJ): %.bin: %.asm
 	$(ASM) $(BASMFLAGS) $@ $<
