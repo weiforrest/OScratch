@@ -2,11 +2,13 @@
 /* init the kernel environment */
 #include <const.h>
 #include <types.h>
+#include <interrupt.h>
 #include <protect.h>
 #include <proto.h>
 #include <global.h>
 
 void setup_proc();
+void setup_sched();
 void cstart()
 {
 	 disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -25,14 +27,18 @@ void cstart()
 	 *p_idt_limit = IDT_SIZE * sizeof(GATE) - 1;
 	 *p_idt_base = (u32)&idt;
 	 init_idt();
+	 
 	 /* setup the TSS descriptor int gdt */
 	 init_desc(&gdt[enable_gdt_entry++], (u32)&tss,
 			   sizeof(TSS) - 1, DA_386TSS);
 	 p_proc_ready = proc_table;
-
-
 	 setup_proc();
 	 init_tss();
+	 setup_sched();
+	 /* TODO: */
+	 /* setup_keyboard(); */
+	 /* setup_console(); */
+	 
 	 disp_str("-----\"cstart\" ends-----\n");
 }
 

@@ -3,11 +3,12 @@
 #define __OSCRATCH_USERLIB_H_
 
 #include <const.h>
+#include <types.h>
 
 
-void print(char *);
-void print_int(int);
-
+u32 print(char *);
+u32 print_int(int);
+u32 get_ticks();
 
 
 

@@ -1,8 +1,10 @@
 ;;; interrupt.asm	(c)weiforrest
-;;; all interrupt handler entry
+;;; all interrupt handler entry for low-level
+;;; contain the Intel reserver interrupt and
+;;; hardware interrupt handler
 %include "const.inc"
 
-extern exception_handler
+
 ;;; interrupt handler
 global divide_error
 global single_step_exception
@@ -19,74 +21,101 @@ global segment_not_present
 global stack_exception
 global general_protection
 global page_fault
-global copr_error		
+global copr_error
+;;; extern do_*
+extern do_divide_error
+extern do_single_step_exception
+extern do_nmi
+extern do_breakpoint_exception
+extern do_overflow
+extern do_bounds_check
+extern do_inval_opcode
+extern do_copr_not_available
+extern do_double_fault
+extern do_copr_seg_overrun
+extern do_inval_tss
+extern do_segment_not_present
+extern do_stack_exception
+extern do_general_protection
+extern do_page_fault
+extern do_copr_error
 
+;;; extern variable
+extern StackTop
+extern tss
+extern hwirq_table
+extern p_proc_ready
+extern exception_handler
+
+; 中断和异常 -- 异常
 divide_error:
-		push 0xffffffff
-		push 0
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	0		; vector_no	= 0
+	jmp	exception
 single_step_exception:
-		push 0xffffffff
-		push 1
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	1		; vector_no	= 1
+	jmp	exception
 nmi:
-		push 0xffffffff
-		push 2
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	2		; vector_no	= 2
+	jmp	exception
 breakpoint_exception:
-		push 0xffffffff
-		push 3
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	3		; vector_no	= 3
+	jmp	exception
 overflow:
-		push 0xffffffff
-		push 4
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	4		; vector_no	= 4
+	jmp	exception
 bounds_check:
-		push 0xffffffff
-		push 5
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	5		; vector_no	= 5
+	jmp	exception
 inval_opcode:
-		push 0xffffffff
-		push 6
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	6		; vector_no	= 6
+	jmp	exception
 copr_not_available:
-		push 0xffffffff
-		push 7
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	7		; vector_no	= 7
+	jmp	exception
 double_fault:
-		push 0xffffffff
-		push 8
-		jmp exception
+	push	8		; vector_no	= 8
+	jmp	exception
 copr_seg_overrun:
-		push 0xffffffff
-		push 9
-		jmp exception
-inval_tss:						;have a error code 
-		push 10
-		jmp exception
+	push	0xFFFFFFFF	; no err code
+	push	9		; vector_no	= 9
+	jmp	exception
+inval_tss:
+	push	10		; vector_no	= A
+	jmp	exception
 segment_not_present:
-		push 11
-		jmp exception
+	push	11		; vector_no	= B
+	jmp	exception
 stack_exception:
-		push 12
-		jmp exception
+	push	12		; vector_no	= C
+	jmp	exception
 general_protection:
-		push 13
-		jmp exception
+	push	13		; vector_no	= D
+	jmp	exception
 page_fault:
-		push 14
-		jmp exception
+	push	14		; vector_no	= E
+	jmp	exception
 copr_error:
-		push 16
-		jmp exception
-exception:
-		call exception_handler
-		add esp, 4 * 2
-		hlt
-		iretd
+	push	0xFFFFFFFF	; no err code
+	push	16		; vector_no	= 10h
+	jmp	exception
 
-global i8259aint00
-global i8259aint01
+exception:
+	call	exception_handler
+	add	esp, 4*2	; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
+	hlt
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TODO: move the hardware interrupt to independent files
+global clock_interrupt
+global keyboard_interrupt
 global i8259aint02
 global i8259aint03
 global i8259aint04
@@ -103,143 +132,81 @@ global i8259aint14
 global i8259aint15
 global ignoreint
 
-extern i8259a_irq
-extern clock_handler
-extern StackTop
-extern tss
-extern p_proc_ready
-extern disp_color_str
+extern save_regs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%macro hwint_master 1
+		call save_regs
+		;; disable current interrupt
+		in al, INT_M_CTLMASK
+		or al, (1 << %1)
+		out INT_M_CTLMASK, al
+		;Send EOI
+		mov al, EOI			
+		out INT_M_CTL, al
+		;; NOW we must be in kernel stack
+		sti
+		call [hwirq_table + 4 * %1]
+		cli
+		;; enable current interrupt
+		in al, INT_M_CTLMASK
+		and al, ~(1 << %1)
+		out INT_M_CTLMASK, al
+;;; reenter jump to restart_reenter (not to switch stack)
+		ret						
+%endmacro
+
+%macro hwint_slave 1
+		call save_regs
+		in al, INT_S_CTLMASK
+		or al, (1 << (%1 - 8))
+		out INT_S_CTLMASK, al
 		
-
-
-reenter00:		dd 0
-i8259aint00:					;clock	
-		pushad
-		push ds
-		push es
-		push fs
-		push gs
-
-		mov ax, 0x18
-		mov gs, ax
-		
-		inc byte [gs:0]
 		mov al, EOI			;reenable int
 		out INT_M_CTL, al
-		
-		inc dword [reenter00]
-		cmp dword [reenter00], 1
-		jne .re_enter
-
-		mov esp, StackTop
+		nop
+		out INT_S_CTL, al		;Both Slave and Master
 		sti
-		;; do some complex thing
-		push 0
-		call clock_handler
-		add esp, 4
+		call [hwirq_table + 4 * %1]
 		cli
-		;; switch to ready proc
-		mov esp, [p_proc_ready]
-		lea eax, [esp + OFFSET_REGS_TOP]
-		mov dword [tss + OFFSET_SP0_TSS], eax
-		
-.re_enter:
-		dec dword [reenter00]
-		pop gs
-		pop fs
-		pop es 
-		pop ds
-		popad
-		iretd
-		
-reenter01:		dd 0
-i8259aint01:					;keyboard
-		pushad
-		push ds
-		push es
-		push fs
-		push gs
-
-		mov ax, 0x18
-		mov gs, ax
-		inc byte [gs:2]
-		;; mov al, EOI			;reenable int
-		;; out INT_M_CTL, al
-		
-		inc dword [reenter01]
-		cmp dword [reenter01], 1
-		jne .re_enter
-
-		mov esp, StackTop
-		sti
-		;; do some complex thing
-		;; push 0
-		;; call clock_handler
-		;; add esp, 4
-		cli
-		mov esp, [p_proc_ready]
-		lea eax, [esp + OFFSET_REGS_TOP]
-		mov dword [tss + OFFSET_SP0_TSS], eax
-.re_enter:
-		dec dword [reenter00]
-		
-		pop gs
-		pop fs
-		pop es 
-		pop ds
-		popad
-		iretd
-		
+		in al, INT_S_CTLMASK
+		and al, ~(1 << (%1 - 8))
+		out INT_S_CTLMASK, al
+		ret
+%endmacro
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+clock_interrupt:
+		hwint_master 0
+keyboard_interrupt:
+		hwint_master 1		
 i8259aint02:
-		push 2
-		jmp i8259aint
+		hwint_master 2
 i8259aint03:
-		push 3
-		jmp i8259aint
+		hwint_master 3		
 i8259aint04:
-		push 4
-		jmp i8259aint
+		hwint_master 4		
 i8259aint05:
-		push 5
-		jmp i8259aint
+		hwint_master 5		
 i8259aint06:
-		push 6
-		jmp i8259aint
+		hwint_master 6		
 i8259aint07:
-		push 7
-		jmp i8259aint
+		hwint_master 7		
 i8259aint08:
-		push 8
-		jmp i8259aint
+		hwint_master 8		
 i8259aint09:
-		push 9
-		jmp i8259aint
+		hwint_slave 9
 i8259aint10:
-		push 10
-		jmp i8259aint
+		hwint_slave 10
 i8259aint11:
-		push 11
-		jmp i8259aint
+		hwint_slave 11
 i8259aint12:
-		push 12
-		jmp i8259aint
+		hwint_slave 12
 i8259aint13:
-		push 13
-		jmp i8259aint
+		hwint_slave 13
 i8259aint14:
-		push 14
-		jmp i8259aint
+		hwint_slave 14
 i8259aint15:
-		push 15
-		jmp i8259aint
-i8259aint:
-		call i8259a_irq
-		add esp, 4
-		iretd
-
-
+		hwint_slave 15
 		
-
 ignoreint:
 		pushad
 		push ds

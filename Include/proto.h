@@ -15,4 +15,10 @@ char * itoa(char *, int);
 void disp_int(int);
 void taska();
 void taskb();
+
+void enable_hwirq(int irq);
+int disable_hwirq(int irq);
+
+void delay(int time);
+
 #endif	/* __OSCRATCH_PROTO_H_ */

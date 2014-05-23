@@ -14,7 +14,9 @@ DUMP		= objdump			#使用objdump 反汇编 比ndisasm 更加好用
 #FLAGS
 BASMFLAGS	= -I Boot/Include/ -o
 KASMFLAGS	= -f elf -I Include/ -o 
-CFLAGS		= -c -m32 -nostdinc -g -Wall -I Include/ -fno-builtin -fno-stack-protector -o # 不使用内置的优化，和堆栈保护检测
+CFLAGS		= -c -m32 -nostdinc -g -Wall -O -I Include/ -fno-builtin\
+-fno-stack-protector -fstrength-reduce -fomit-frame-pointer  -o # 不使用内置的优化，和堆栈保护检测
+
 KLDFLAGS	= -m elf_i386 -Ttext $(ENTRYPOINT) -o
 DASMFLAGS	= -o 0x7c00 -s 0x7c3e #反汇编BOOT
 
@@ -24,10 +26,12 @@ LOAD		= Boot/load.bin
 BOOT_OBJ	= $(BOOT) $(LOAD)
 KERNEL		= kernel.bin
 KERNEL_STRIP= kernel.bin.stripped
+# TODO: reorginaze the file
 LIB_OBJ = Lib/string.o Lib/klib.o Lib/kliba.o Lib/userliba.o Lib/userlib.o
 KERNEL_OBJ = Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
-				Kernel/protect.o Kernel/global.o Kernel/interrupt.o \
-				Kernel/task.o Kernel/sched.o $(LIB_OBJ)
+				Kernel/protect.o Kernel/global.o Kernel/interrupta.o \
+				Kernel/task.o Kernel/sched.o Kernel/interrupt.o \
+				Kernel/syscall.o Kernel/keyboard.o $(LIB_OBJ)
 
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy
@@ -98,6 +102,8 @@ Kernel/task.o:	Include/const.h Include/types.h Include/proto.h\
 
 Kernel/sched.o: Include/const.h Include/proto.h Include/global.h
 
+Kernel/interrupt.o: Include/const.h Include/types.h Include/interrupt.h
+
 Lib/klib.o:  Include/proto.h
 
 Lib/userlib.o: Include/proto.h Include/userlib.h
@@ -106,7 +112,10 @@ Lib/userlib.o: Include/proto.h Include/userlib.h
 Kernel/kernel.o: Kernel/kernel.asm
 	$(ASM) $(KASMFLAGS) $@ $<
 
-Kernel/interrupt.o: Kernel/interrupt.asm
+Kernel/interrupta.o: Kernel/interrupt.asm
+	$(ASM) $(KASMFLAGS) $@ $<
+
+Kernel/syscall.o: Kernel/syscall.asm
 	$(ASM) $(KASMFLAGS) $@ $<
 
 Lib/string.o: Lib/string.asm
