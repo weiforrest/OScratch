@@ -47,70 +47,133 @@ extern hwirq_table
 extern p_proc_ready
 extern exception_handler
 
-; 中断和异常 -- 异常
-divide_error:
-	push	0xFFFFFFFF	; no err code
-	push	0		; vector_no	= 0
-	jmp	exception
-single_step_exception:
-	push	0xFFFFFFFF	; no err code
-	push	1		; vector_no	= 1
-	jmp	exception
-nmi:
-	push	0xFFFFFFFF	; no err code
-	push	2		; vector_no	= 2
-	jmp	exception
-breakpoint_exception:
-	push	0xFFFFFFFF	; no err code
-	push	3		; vector_no	= 3
-	jmp	exception
-overflow:
-	push	0xFFFFFFFF	; no err code
-	push	4		; vector_no	= 4
-	jmp	exception
-bounds_check:
-	push	0xFFFFFFFF	; no err code
-	push	5		; vector_no	= 5
-	jmp	exception
-inval_opcode:
-	push	0xFFFFFFFF	; no err code
-	push	6		; vector_no	= 6
-	jmp	exception
-copr_not_available:
-	push	0xFFFFFFFF	; no err code
-	push	7		; vector_no	= 7
-	jmp	exception
-double_fault:
-	push	8		; vector_no	= 8
-	jmp	exception
-copr_seg_overrun:
-	push	0xFFFFFFFF	; no err code
-	push	9		; vector_no	= 9
-	jmp	exception
-inval_tss:
-	push	10		; vector_no	= A
-	jmp	exception
-segment_not_present:
-	push	11		; vector_no	= B
-	jmp	exception
-stack_exception:
-	push	12		; vector_no	= C
-	jmp	exception
-general_protection:
-	push	13		; vector_no	= D
-	jmp	exception
-page_fault:
-	push	14		; vector_no	= E
-	jmp	exception
-copr_error:
-	push	0xFFFFFFFF	; no err code
-	push	16		; vector_no	= 10h
-	jmp	exception
+divide_error:					;(int 0)no error code
+		push do_divide_error
+no_error_code:	
+		xchg dword eax, [esp] 	;eax <-> &do_*
+		push ecx
+		push edx
+		push ebx
+		push esp
+		push ebp
+		push esi
+		push edi
+		push ds
+		push es
+		push fs
+		push gs					;Save all register
 
-exception:
-	call	exception_handler
-	add	esp, 4*2	; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
-	hlt
+		lea edx, [esp + 48]
+		mov esp, StackTop		;mov to kernel stack
+		push 0x0			;error code(argv2)
+		push edx				;point to the eip3(argv1) 指向保存eip3的REGS中
+		
+		mov edx, SELECTOR_KERNEL_DS
+		mov ds, dx
+		mov es, dx
+		mov fs, dx
+		call eax				;call the do_* handler function
+		add esp, 8
+		
+		mov esp, [p_proc_ready]	;return 
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd
+				
+single_step_exception:			;(int 1)no error code
+		push do_single_step_exception
+		jmp  no_error_code
+		
+nmi:							;(int 2)no error code
+		push do_nmi
+		jmp no_error_code
+		
+breakpoint_exception: 		;(int 3)no error code
+		push do_breakpoint_exception
+		jmp no_error_code
+		
+overflow:						;(int 4) no error code
+		push do_overflow
+		jmp no_error_code
+		
+bounds_check:					;(int 5)no error code
+		push do_bounds_check
+		jmp no_error_code
+		
+inval_opcode:					;(int 6)no error code
+		push do_inval_opcode
+		jmp no_error_code
+		
+copr_not_available:				;(int 7)no error code
+		push do_copr_not_available
+		jmp no_error_code
+		
+double_fault:					;(int 8)error code
+		push do_double_fault
+error_code:
+		xchg eax, [esp + 4]		; eax <-> error
+		xchg ecx, [esp]			; ecx <-> &do_*
+		push edx
+		push ebx
+		push esp
+		push ebp
+		push esi
+		push edi
+		push ds
+		push es
+		push fs
+		push gs
+
+		lea edx, [esp + 48]
+		mov esp, StackTop
+		push eax				;error code (argv2)
+		push edx				;ponit tp the eip3(argv1)
+		
+		mov  edx, SELECTOR_KERNEL_DS
+		mov ds, dx
+		mov es, dx
+		mov fs, dx
+		call ebx
+		add esp, 8
+
+		mov esp, [p_proc_ready]
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd
+		
+copr_seg_overrun:				;(int 9)no error code
+		push do_copr_seg_overrun
+		jmp no_error_code
+		
+inval_tss:						;(int 10)error code 
+		push do_inval_tss
+		jmp error_code
+		
+segment_not_present:			;(int 11)error code
+		push do_segment_not_present
+		jmp error_code
+		
+stack_exception:				;(int 12)error code
+		push do_stack_exception
+		jmp error_code
+		
+general_protection:				;(int 13)error code
+		push do_general_protection
+		jmp error_code
+		
+page_fault:						;(int 14)error code
+		push do_page_fault
+		jmp error_code
+		
+copr_error:						;(int 16)error code
+		push do_copr_error
+		jmp error_code
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TODO: move the hardware interrupt to independent files

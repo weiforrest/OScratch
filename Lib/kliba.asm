@@ -4,7 +4,6 @@ extern disp_pos
 [SECTION .text]
 
 global disp_color_str
-global itoa
 
 ;;; void disp_color_str(char *, int)
 disp_color_str:
@@ -53,7 +52,7 @@ disp_color_str:
 		pop ebp
 		ret
 
-		
+global itoa		
 ;;; char * itoa(char *, int)
 itoa:
 		push ebp
@@ -148,5 +147,8 @@ dis_already
 		xor eax, eax
 		ret
 
+global hlt
+hlt:
+		hlt
 
 

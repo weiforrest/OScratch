@@ -62,16 +62,36 @@ void do_general_protection(u32 esp, u32 error);
 void do_page_fault(u32 esp, u32 error);
 void do_copr_error(u32 esp, u32 error);
 
+/* TODO:这里模仿linux 的处理,但是相应的系统函数还没有建立起来,所以先使用现有的函数 */
+/* 对于SS和ESP,只有在用户下发生才存在的,所以内核发生,这里的值是不存在的,同时 */
+/* 因为同在内核中,因为没有对是否已经在内核栈中做判断,所以在压参数的时候*/
+/* 踩栈的问题,会在不久修复 使用cs的值进行判断是否是内核中中断过来的*/
 static void die(char *msg, u32 esp, u32 error)
 {
 	 u32 * pesp = (u32 *)esp;
-	 /* printk("%s:%04x\n", msg, error & 0xffff); */
-	 /* printk("EIP:%x\tCS:%x\nEFLAGS:%x\tESP:%x\tSS:%x\n", */
-			/* pesp[0], pesp[1], pesp[2], pesp[3], pesp[4]); */
-/* TODO: add the display context for process */
 
-	 /* do_exit();						/\* TODO: do_exit() is not complete *\/ */
-	 disp_str(msg);
+	 disp_pos = 0;
+	 int i;
+	 for(i=0;i<80*5;i++){
+		  disp_str(" ");
+	 }
+	 disp_pos = 0;
+	 disp_color_str(msg, 0x74);	/* 辉底红字 */
+	 if(error){
+		  disp_color_str(" ERRORCODE: ", 0x74);
+		  disp_int(error & 0xffff);
+	 }
+	 disp_color_str(" CS:", 0x74);
+	 disp_int(pesp[1]);
+	 disp_color_str("EIP: ", 0x74);
+	 disp_int(pesp[0]);
+	 disp_color_str("EFLAGS: ", 0x74);
+	 disp_int(pesp[2]);
+	 disp_color_str("SS: ", 0x74);
+	 disp_int(pesp[4]);
+	 disp_color_str("ESP: ", 0x74);
+	 disp_int(pesp[3]);
+	 hlt();
 }
 
 
@@ -249,54 +269,4 @@ void init_idt()
 		  init_idt_desc(i, DA_386IGate,
 						ignoreint, PRIVILEGE_KERNEL);
 	 }
-}
-
-
-void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
-{
-	int i;
-	int text_color = 0x74; /* 灰底红字 */
-	char err_description[][64] = {	"#DE Divide Error",
-					"#DB RESERVED",
-					"—  NMI Interrupt",
-					"#BP Breakpoint",
-					"#OF Overflow",
-					"#BR BOUND Range Exceeded",
-					"#UD Invalid Opcode (Undefined Opcode)",
-					"#NM Device Not Available (No Math Coprocessor)",
-					"#DF Double Fault",
-					"    Coprocessor Segment Overrun (reserved)",
-					"#TS Invalid TSS",
-					"#NP Segment Not Present",
-					"#SS Stack-Segment Fault",
-					"#GP General Protection",
-					"#PF Page Fault",
-					"—  (Intel reserved. Do not use.)",
-					"#MF x87 FPU Floating-Point Error (Math Fault)",
-					"#AC Alignment Check",
-					"#MC Machine Check",
-					"#XF SIMD Floating-Point Exception"
-				};
-
-	/* 通过打印空格的方式清空屏幕的前五行，并把 disp_pos 清零 */
-	disp_pos = 0;
-	for(i=0;i<80*5;i++){
-		disp_str(" ");
-	}
-	disp_pos = 0;
-
-	disp_color_str("Exception! --> ", text_color);
-	disp_color_str(err_description[vec_no], text_color);
-	disp_color_str("\n\n", text_color);
-	disp_color_str("EFLAGS:", text_color);
-	disp_int(eflags);
-	disp_color_str("CS:", text_color);
-	disp_int(cs);
-	disp_color_str("EIP:", text_color);
-	disp_int(eip);
-
-	if(err_code != 0xFFFFFFFF){
-		disp_color_str("Error code:", text_color);
-		disp_int(err_code);
-	}
 }

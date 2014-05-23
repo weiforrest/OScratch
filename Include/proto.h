@@ -21,4 +21,5 @@ int disable_hwirq(int irq);
 
 void delay(int time);
 
+void hlt();
 #endif	/* __OSCRATCH_PROTO_H_ */
