@@ -9,6 +9,7 @@
 
 void setup_proc();
 void setup_sched();
+void setup_keyboard();
 void cstart()
 {
 	 disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -35,8 +36,7 @@ void cstart()
 	 setup_proc();
 	 init_tss();
 	 setup_sched();
-	 /* TODO: */
-	 /* setup_keyboard(); */
+	 setup_keyboard();
 	 /* setup_console(); */
 	 
 	 disp_str("-----\"cstart\" ends-----\n");

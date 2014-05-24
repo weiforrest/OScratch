@@ -20,6 +20,9 @@ StackTop:
 [SECTION .text]
 		
 global _start
+global restart
+global restart_reenter
+
 
 _start:							;the gcc ld default use to be program entry
 		mov esp, StackTop
@@ -48,15 +51,19 @@ restart_reenter:
 		popad
 		iretd					; will set the if bit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TODO: 处理eax ebx ecx edx 作为参数的问题
+;;; TODO: I find a implict bug in interrupt handle process,
+;;; it like overwrite stack, but i don.t find it, I will be
+;;; fix it by next occur
 global save_regs
+global reenter
 reenter:		dd 0	;flag for interrupt reenter
+;;; 这里使用reenter 作为是否已经在内核栈的判断
 save_regs:		
 		xchg dword eax, [esp] 	; ret addr <-> eax
 		push ecx
 		push edx
 		push ebx
-		push esp
+		push eax				;because esp not use,use it to save ret addr
 		push ebp
 		push esi
 		push edi
@@ -64,13 +71,10 @@ save_regs:
 		push es
 		push fs
 		push gs
-		mov esi, eax			;esi is ret addr
 		
 ;;; 这里使用edi 保存着 eax在REGS的地址,用于syscall中修改作为返回值eax的值
 ;;; 不使用p_proc_ready,防止在syscall中, 时钟中断改变p_proc_ready的值.
-;;; TODO: 确认时钟中断是否会在syscall中,将p_proc_ready的值,使得返回值修改错误.
-
-		lea edi, [esp + 44] 		;point to eax		
+		mov edi, esp				;edi is top of stack
 		mov eax, SELECTOR_KERNEL_GS ;set the kernel segment selector
 		mov gs, ax
 		mov eax, SELECTOR_KERNEL_DS
@@ -78,7 +82,7 @@ save_regs:
 		mov es, ax
 		mov fs, ax				;TODO: fs set the user date segment
 
-		mov eax, [edi] 	;restore eax
+		mov eax, [edi + 44] 	;restore eax
 		
 		inc dword [reenter]
 		cmp dword [reenter], 0
@@ -86,10 +90,10 @@ save_regs:
 
 		mov esp, StackTop
 		push restart
-		jmp esi
+		jmp [edi + 28]
 ;;; whatever the interrupt is reenter, the handle alway run
 .reenter:
 		push restart_reenter	;in kernel stack
-		jmp esi
+		jmp [edi + 28]
 ;;; when save_regs return, esp still in kernel stack
 ;;; end of save_regs

@@ -11,6 +11,7 @@
 #define IDT_SIZE 256
 
 #define HWINT_SIZE 16
+#define RESERVED_INT_SIZE 16
 #define SYS_CALL_SIZE 16
 /* THE FIRST aviliable GDT ENTRY */
 #define FIRST_GDT_ENTRY 4

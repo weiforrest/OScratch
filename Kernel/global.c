@@ -6,8 +6,10 @@
 #include <protect.h>
 #include <global.h>
 #include <syscall.h>
-void * sys_call_table[SYS_CALL_SIZE]={
+void keyboard_read();
+int_handler sys_call_table[SYS_CALL_SIZE]={
 	 0,
 	 sys_get_ticks,
-	 sys_disp
+	 sys_disp,
+	 keyboard_read				/* TODO 暂时放在这里, */
 };

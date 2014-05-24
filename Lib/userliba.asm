@@ -21,4 +21,12 @@ get_ticks:
 		int 0x80
 		pop ebp
 		ret
-		
+
+global read_keyboard
+read_keyboard:	
+		push ebp
+		mov ebp,esp
+		mov eax, 3
+		int 0x80
+		pop ebp
+		ret

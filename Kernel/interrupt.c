@@ -62,6 +62,26 @@ void do_general_protection(u32 esp, u32 error);
 void do_page_fault(u32 esp, u32 error);
 void do_copr_error(u32 esp, u32 error);
 
+reserved_int_handler reserved_int_table[RESERVED_INT_SIZE]={
+	 do_divide_error,
+	 do_single_step_exception,
+	 do_nmi,
+	 do_breakpoint_exception,
+	 do_overflow,
+	 do_bounds_check,
+	 do_inval_opcode,
+	 do_copr_not_available,
+	 do_double_fault,
+	 do_copr_seg_overrun,
+	 do_inval_tss,
+	 do_segment_not_present,
+	 do_stack_exception,
+	 do_general_protection,
+	 do_page_fault,
+	 do_copr_error,
+};
+
+
 /* TODO:这里模仿linux 的处理,但是相应的系统函数还没有建立起来,所以先使用现有的函数 */
 /* 对于SS和ESP,只有在用户下发生才存在的,所以内核发生,这里的值是不存在的,同时 */
 /* 因为同在内核中,因为没有对是否已经在内核栈中做判断,所以在压参数的时候*/
@@ -185,7 +205,7 @@ static void init_idt_desc(u8 vector, u8 desc_type,
 	 p_gate->selector = SELECTOR_KERNEL_CS;
 	 p_gate->dcount_attr = ((desc_type | (privilege << 5))<< 8) & 0xff00;
 }
-
+/* 除了系统调用中断使用陷阱们,其他全部使用中断们 */
 void init_idt()
 {
 	 init_i8259a();

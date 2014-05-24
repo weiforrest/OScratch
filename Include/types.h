@@ -6,6 +6,6 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 
 typedef void (*int_handler) ();
-
+typedef void (*reserved_int_handler)(u32, u32);
 
 #endif	/* __OSCRATCH_TYPES_H_ */

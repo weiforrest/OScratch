@@ -44,81 +44,50 @@ extern do_copr_error
 extern StackTop
 extern tss
 extern hwirq_table
-extern p_proc_ready
-extern exception_handler
+extern reserved_int_table
+extern restart
+extern restart_reenter
+extern reenter
+;;; 保留中断前后,寄存器的值没有改变(REGS中的nouse_esp的值变了)
+%macro reserved_int_no_error 1
+		call save_regs
+		push 0x0
+		push edi
+		call [reserved_int_table + 4 * %1]
+		add esp, 8
+		ret
+%endmacro
 
 divide_error:					;(int 0)no error code
-		push do_divide_error
-no_error_code:	
-		xchg dword eax, [esp] 	;eax <-> &do_*
-		push ecx
-		push edx
-		push ebx
-		push esp
-		push ebp
-		push esi
-		push edi
-		push ds
-		push es
-		push fs
-		push gs					;Save all register
-
-		lea edx, [esp + 48]
-		mov esp, StackTop		;mov to kernel stack
-		push 0x0			;error code(argv2)
-		push edx				;point to the eip3(argv1) 指向保存eip3的REGS中
-		
-		mov edx, SELECTOR_KERNEL_DS
-		mov ds, dx
-		mov es, dx
-		mov fs, dx
-		call eax				;call the do_* handler function
-		add esp, 8
-		
-		mov esp, [p_proc_ready]	;return 
-		pop gs
-		pop fs
-		pop es
-		pop ds
-		popad
-		iretd
+		reserved_int_no_error 0
 				
 single_step_exception:			;(int 1)no error code
-		push do_single_step_exception
-		jmp  no_error_code
+		reserved_int_no_error 1
 		
 nmi:							;(int 2)no error code
-		push do_nmi
-		jmp no_error_code
-		
+		reserved_int_no_error	2
+				
 breakpoint_exception: 		;(int 3)no error code
-		push do_breakpoint_exception
-		jmp no_error_code
+		reserved_int_no_error 3
 		
 overflow:						;(int 4) no error code
-		push do_overflow
-		jmp no_error_code
+		reserved_int_no_error 4
 		
 bounds_check:					;(int 5)no error code
-		push do_bounds_check
-		jmp no_error_code
+		reserved_int_no_error 5
 		
 inval_opcode:					;(int 6)no error code
-		push do_inval_opcode
-		jmp no_error_code
+		reserved_int_no_error 6
 		
 copr_not_available:				;(int 7)no error code
-		push do_copr_not_available
-		jmp no_error_code
-		
-double_fault:					;(int 8)error code
-		push do_double_fault
-error_code:
-		xchg eax, [esp + 4]		; eax <-> error
-		xchg ecx, [esp]			; ecx <-> &do_*
+		reserved_int_no_error 7
+
+save_regs_code:
+		xchg eax, [esp + 4]		; ret addr <-> eax
+		xchg ecx, [esp]			; error code <-> ecx
 		push edx
 		push ebx
-		push esp
+		push eax				;ret addr
 		push ebp
 		push esi
 		push edi
@@ -127,53 +96,58 @@ error_code:
 		push fs
 		push gs
 
-		lea edx, [esp + 48]
-		mov esp, StackTop
-		push eax				;error code (argv2)
-		push edx				;ponit tp the eip3(argv1)
-		
-		mov  edx, SELECTOR_KERNEL_DS
+		mov edi, esp
+		mov eax, SELECTOR_KERNEL_GS
+		mov gs, ax
+		mov eax, SELECTOR_KERNEL_DS
 		mov ds, dx
 		mov es, dx
 		mov fs, dx
-		call ebx
-		add esp, 8
+		
+		inc dword [reenter]
+		cmp dword [reenter], 0
+		jne .reenter
+		mov esp, StackTop
+		push restart
+		jmp [edi + 28]
+.reenter:
+		push restart_reenter
+		jmp [edi + 28]
+;;; end of save_regs_code
 
-		mov esp, [p_proc_ready]
-		pop gs
-		pop fs
-		pop es
-		pop ds
-		popad
-		iretd
+%macro reserved_int_error 1
+		call save_regs_code
+		push ecx				;the ecx save the error code
+		push edi
+		call [reserved_int_table + 4 * %1]
+		add esp,8
+		ret
+%endmacro
+
+double_fault:					;(int 8)error code
+		reserved_int_error 8
 		
 copr_seg_overrun:				;(int 9)no error code
-		push do_copr_seg_overrun
-		jmp no_error_code
+		reserved_int_error 9
 		
 inval_tss:						;(int 10)error code 
-		push do_inval_tss
-		jmp error_code
+		reserved_int_error 10
 		
 segment_not_present:			;(int 11)error code
-		push do_segment_not_present
-		jmp error_code
+		reserved_int_no_error 11
 		
 stack_exception:				;(int 12)error code
-		push do_stack_exception
-		jmp error_code
+		reserved_int_error 12
 		
 general_protection:				;(int 13)error code
-		push do_general_protection
-		jmp error_code
+		reserved_int_error 13
 		
 page_fault:						;(int 14)error code
-		push do_page_fault
-		jmp error_code
+		reserved_int_error 14
 		
 copr_error:						;(int 16)error code
-		push do_copr_error
-		jmp error_code
+		;; int 15 号没有使用,于 reserved_int_table 偏移是15
+		reserved_int_error 15
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TODO: move the hardware interrupt to independent files
@@ -197,6 +171,7 @@ global ignoreint
 
 extern save_regs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 硬件中断前后所以的寄存器的值都没有修改(在REGS中nouse_esp的值变了),
 %macro hwint_master 1
 		call save_regs
 		;; disable current interrupt
@@ -228,6 +203,7 @@ extern save_regs
 		out INT_M_CTL, al
 		nop
 		out INT_S_CTL, al		;Both Slave and Master
+		
 		sti
 		call [hwirq_table + 4 * %1]
 		cli
@@ -254,7 +230,7 @@ i8259aint06:
 i8259aint07:
 		hwint_master 7		
 i8259aint08:
-		hwint_master 8		
+		hwint_slave 8		
 i8259aint09:
 		hwint_slave 9
 i8259aint10:

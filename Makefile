@@ -31,7 +31,8 @@ LIB_OBJ = Lib/string.o Lib/klib.o Lib/kliba.o Lib/userliba.o Lib/userlib.o
 KERNEL_OBJ = Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
 				Kernel/protect.o Kernel/global.o Kernel/interrupta.o \
 				Kernel/task.o Kernel/sched.o Kernel/interrupt.o \
-				Kernel/syscall.o Kernel/keyboard.o $(LIB_OBJ)
+				Kernel/syscall.o Kernel/keyboard.o Kernel/console.o\
+				$(LIB_OBJ)
 
 IMGNAME		= a.img
 TMPDIR		= /tmp/floppy

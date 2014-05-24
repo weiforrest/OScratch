@@ -61,7 +61,7 @@ typedef struct {
 	 u32 edi;
 	 u32 esi;
 	 u32 ebp;
-	 u32 kernel_esp;
+	 u32 nouse_esp;
 	 u32 ebx;
 	 u32 edx;
 	 u32 ecx;
@@ -86,6 +86,14 @@ __asm__ volatile ("inb %%dx,%%al\n"				\
 				  "nop\n"								\
 				  :"=a"(_v):"d"(port));					\
 _v;})
+
+#define ENABLE_INT()\
+	 __asm__ volatile ("sti"\
+					   ::)
+#define DISABLE_INT()\
+	 __asm__ volatile ("cli"\
+					   ::)
+
 
 
 void spurious_irq(int);
