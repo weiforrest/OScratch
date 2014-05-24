@@ -88,8 +88,7 @@ reserved_int_handler reserved_int_table[RESERVED_INT_SIZE]={
 /* 踩栈的问题,会在不久修复 使用cs的值进行判断是否是内核中中断过来的*/
 static void die(char *msg, u32 esp, u32 error)
 {
-	 u32 * pesp = (u32 *)esp;
-
+	 u32 * pesp = (u32 *)esp + 12; /* piont to eip */
 	 disp_pos = 0;
 	 int i;
 	 for(i=0;i<80*5;i++){
@@ -107,10 +106,14 @@ static void die(char *msg, u32 esp, u32 error)
 	 disp_int(pesp[0]);
 	 disp_color_str("EFLAGS: ", 0x74);
 	 disp_int(pesp[2]);
-	 disp_color_str("SS: ", 0x74);
-	 disp_int(pesp[4]);
-	 disp_color_str("ESP: ", 0x74);
-	 disp_int(pesp[3]);
+	 if(pesp[1] != SELECTOR_KERNEL_CS ){
+		  disp_color_str("SS: ", 0x74);
+		  disp_int(pesp[4]);
+		  disp_color_str("ESP: ", 0x74);
+		  disp_int(pesp[3]);
+	 }else{
+		  disp_color_str("IN kernel occur", 0x74);
+	 }
 	 hlt();
 }
 
