@@ -100,9 +100,9 @@ save_regs_code:
 		mov eax, SELECTOR_KERNEL_GS
 		mov gs, ax
 		mov eax, SELECTOR_KERNEL_DS
-		mov ds, dx
-		mov es, dx
-		mov fs, dx
+		mov ds, ax
+		mov es, ax
+		mov fs, ax
 		
 		inc dword [reenter]
 		cmp dword [reenter], 0

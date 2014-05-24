@@ -208,7 +208,8 @@ static void init_idt_desc(u8 vector, u8 desc_type,
 	 p_gate->selector = SELECTOR_KERNEL_CS;
 	 p_gate->dcount_attr = ((desc_type | (privilege << 5))<< 8) & 0xff00;
 }
-/* 除了系统调用中断使用陷阱们,其他全部使用中断们 */
+/* 全部使用中断门, 陷阱门处理时允许中断,因为进程信息保存在REGS中,当发生重入时*/
+/* 将破坏掉整个REGS,难以调试 */
 void init_idt()
 {
 	 init_i8259a();
@@ -286,7 +287,7 @@ void init_idt()
 		  init_idt_desc(i, DA_386IGate,
 						ignoreint, PRIVILEGE_KERNEL);
 	 }
-	 init_idt_desc(INT_VECTOR_SYSCALL, DA_386TGate, /* system call is int 0x80 */
+	 init_idt_desc(INT_VECTOR_SYSCALL, DA_386IGate,
 				   systemcall, PRIVILEGE_USER);
 	 for(i = INT_VECTOR_SYSCALL+1; i<IDT_SIZE ;i++){
 		  init_idt_desc(i, DA_386IGate,
