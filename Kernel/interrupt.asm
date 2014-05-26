@@ -2,6 +2,16 @@
 ;;; all interrupt handler entry for low-level
 ;;; contain the Intel reserver interrupt and
 ;;; hardware interrupt handler
+;;; 中断的设计是使用PROC中的REGS保存进程的信息.
+;;; 因为REGS空间问题,保存操作为原子操作.保存以后,再切换到内核栈中,
+;;; 使用的是一个内核栈(TODO:暂时没有给进程分配独立内核栈).
+;;; 中断允许在在内核下切换进程,每一次的中断都相当于时独立的,
+;;; 保存了中断前的所有信息,可以很完美的恢复到中断前的状态,就是在内核态也行
+;;; 
+;;; TODO: 在linux中, 进程调度有关的系统调用, 进程切换时, int 0x80没有返回,
+;;; 后面又会产生中断, 这里的设计是,会在系统调用返回,修改int 0x80的返回值,
+;;; 完成进程切换. 现在只使用stackTOP这个内核栈,确实很危险,在系统变复杂以后,
+;;; 隐患更深了, 在完成相关的结构后,为每一个进程分配相应的内核栈
 %include "const.inc"
 
 
@@ -81,7 +91,10 @@ inval_opcode:					;(int 6)no error code
 		
 copr_not_available:				;(int 7)no error code
 		reserved_int_no_error 7
-
+;;; because have a error code push into stack,so i
+;;; done another special routine to save_regs,
+;;; although it can merge into save_regs.
+;;; TODO: for some reason, i will do it late
 save_regs_code:
 		xchg eax, [esp + 4]		; ret addr <-> eax
 		xchg ecx, [esp]			; error code <-> ecx

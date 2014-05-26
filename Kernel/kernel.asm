@@ -1,5 +1,7 @@
 ;;; kernel.asm		(c) 2014 weiforrest
-;;; 
+;;; kernel.asm  contain the entry of kernel
+;;; and some code of interrupt mechanism :
+;;; save regs routine and go back user mode code
 %include "const.inc"
 ;;; extern function
 extern cstart
@@ -37,6 +39,8 @@ _start:							;the gcc ld default use to be program entry
 		jmp SELECTOR_KERNEL_CS:restart ;flush the instructor register cache
 ;;; set the corrent TSS for ready proc
 ;;; all interrupt use restart to return
+;;; 所有的中断都是通过这里返回的,根据中断的产生时,所在的特权级
+;;; 进行相应的切换栈操作,通过reenter判断.
 restart:
 		mov dword esp, [p_proc_ready]
 		lldt [esp + OFFSET_LDT_PROC]
@@ -49,11 +53,8 @@ restart_reenter:
 		pop es
 		pop ds
 		popad
-		iretd					; will set the if bit
+		iretd					; will set the IF bit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TODO: I find a implict bug in interrupt handle process,
-;;; it like overwrite stack, but i don.t find it, I will be
-;;; fix it by next occur
 global save_regs
 global reenter
 reenter:		dd 0	;flag for interrupt reenter
@@ -70,8 +71,7 @@ save_regs:
 		push ds
 		push es
 		push fs
-		push gs
-		
+		push gs		
 ;;; 这里使用edi 保存着 eax在REGS的地址,用于syscall中修改作为返回值eax的值
 ;;; 不使用p_proc_ready,防止在syscall中, 时钟中断改变p_proc_ready的值.
 		mov edi, esp				;edi is top of stack

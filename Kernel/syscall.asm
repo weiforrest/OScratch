@@ -1,5 +1,5 @@
 ;;; syscall.asm		(c) weiforrest
-;;;
+;;; syscall.asm contain the low level implementation for system call
 %include "const.inc"
 
 extern p_proc_ready

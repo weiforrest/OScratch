@@ -1,5 +1,6 @@
 /* interrupt    (c) weiforrest */
 /* contain all do_* function extern by interrput.asm  */
+/* and init_idt()  */
 #include <const.h>
 #include <types.h>
 #include <interrupt.h>

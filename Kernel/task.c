@@ -1,5 +1,6 @@
 /* task.c    (c) weiforrest */
 /* define some test task function*/
+/* TODO: it will define the number 0 process */
 #include <const.h>
 #include <types.h>
 #include <protect.h>
@@ -23,7 +24,7 @@ void taskb()
 	 while(1){
 		  /* print(p); */
 		  /* print("."); */
-		  delay(2);
+		  delay(1);
 		  read_keyboard();
 	 }
 }

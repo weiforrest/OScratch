@@ -1,5 +1,5 @@
 /* protect.c    (c) weiforrest */
-/* protect mode function */
+/* contain some protect mode routine */
 #include <types.h>
 #include <const.h>
 #include <interrupt.h>

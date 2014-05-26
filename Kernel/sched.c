@@ -1,5 +1,6 @@
 /* sched.c    (c) weiforrest */
-/* schedule for process */
+/* sched.c contain routine schedule for processes and other thing about it,*/
+/* i will build them by degree */
 #include <const.h>
 #include <types.h>
 #include <interrupt.h>

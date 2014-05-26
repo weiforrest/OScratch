@@ -1,5 +1,5 @@
 /* start.c    (c) weiforrest */
-/* init the kernel environment */
+/* init the kernel environment, it like the linux file main.c */
 #include <const.h>
 #include <types.h>
 #include <interrupt.h>
@@ -37,7 +37,7 @@ void cstart()
 	 init_tss();
 	 setup_sched();
 	 setup_keyboard();
-	 /* setup_console(); */
+	 setup_console();
 	 
 	 disp_str("-----\"cstart\" ends-----\n");
 }

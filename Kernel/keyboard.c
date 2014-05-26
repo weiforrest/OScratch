@@ -1,5 +1,5 @@
 /* keyboard.c    (c) weiforrest  */
-/* contain the keyboard handle */
+/* contain all  keyboard routine */
 #include <const.h>
 #include <types.h>
 #include <interrupt.h>
@@ -63,7 +63,11 @@ static u8 get_byte_from_kbuf()
 	 return byte;
 }
 
-
+/* 现在键盘的读取暂时由一个进程来完成,等相应的结构建立起来以后,会使用中断把 */
+/* 键值放到对应的缓冲区中,由相应的经常读取 */
+/* it just copy from the orange'Os, only for now i just need some keyboard */
+/* function, i will rewrite it for late */
+/* TODO: and i think i can do it grace enough */
 void keyboard_read()
 {
 	 u8	scan_code;
