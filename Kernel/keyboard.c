@@ -63,8 +63,8 @@ void do_keyboard_handler()
 		  control_statue ^= FLAG_ALT;
 		  break;
 	 case 0x3b:					/* F1-F3 控制台切换 */
-	 case 0x3C:
-	 case 0x3e:
+	 case 0x3c:
+	 case 0x3d:
 		  /* if(control_statue & FLAG_ALT) */
 		  select_console((scan_byte & 0x7f) - 0x3b);
 		  return;
