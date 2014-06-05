@@ -11,15 +11,16 @@
 void task0()
 {
 	 while(1){
-		  delay(1);
-		  /* printf("A"); */
+		  delay(30);
+		  printf("A");
 	 }
 }
 /* 相当于linux中的进程1 */
 void task1()
 {
 	 while(1){
-		  delay(1);
+		  delay(30);
+		  printf("B");
 		  /* read_keyboard(); */
 	 }
 }

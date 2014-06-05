@@ -3,8 +3,6 @@
 
 #include <keyboard.h>
 
-
-
 #define MAP_COLS	3	/* Number of columns in keymap */
 #define COL_0XE0    2
 #define NR_SCAN_CODES	0x80	/* Number of scan codes (rows in keymap) */

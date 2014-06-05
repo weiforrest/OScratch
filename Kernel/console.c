@@ -98,11 +98,14 @@ void  console_print(CONSOLE * p_console,char * str)
 			   break;
 		  }
 	 }
-	 set_cursor(p_console->cursor_addr);
+	 
+	 if(is_current_console(p_console)){
+		  set_cursor(p_console->cursor_addr);
+	 }
 }
 
 int sys_write(char *buf, PROC * p_proc)
 {
-	 console_print(&console_table[/*p_proc->proc.nr_tty*/1], buf);
+	 console_print(&console_table[p_proc->proc.nr_tty], buf);
 	 return 0;
 }

@@ -24,7 +24,7 @@ systemcall:
 		sti
 		push ebx
 		call [sys_call_table + eax * 4]
-		add esp, 4*3
+		add esp, 4*2
 		cli
 		;; 修改返回值eax
 		pop edi

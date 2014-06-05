@@ -25,3 +25,4 @@ set disassembly-flavor intel
 
 b console_print
 b printf
+b sys_write
