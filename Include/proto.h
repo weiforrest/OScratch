@@ -4,22 +4,25 @@
 
 #include <types.h>
 
-void disp_color_str(char *, int);
-#define disp_str(str) disp_color_str(str, 0xf)
+int vsprintf(char *buf, const char * fmt, va_list);
+int printk(const char *fmt, ...);
 
 void init_8259();
 void *memcpy(void *, void *, u32);
 void *memset(void *, u8, u32);
 char * itoa(char *, int);
+char *strcpy(char *, char *);
 
-void disp_int(int);
-void taska();
-void taskb();
+int strlen(char *);
+
+void task0();
+void task1();
 
 void enable_hwirq(int irq);
 int disable_hwirq(int irq);
 
 void delay(int time);
+
 
 void hlt();
 #endif	/* __OSCRATCH_PROTO_H_ */

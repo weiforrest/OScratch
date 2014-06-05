@@ -1,30 +1,25 @@
 /* task.c    (c) weiforrest */
 /* define some test task function*/
-/* TODO: it will define the number 0 process */
+/* 这里定义了进程0和进程1, 相当于linux中的前两个进程 */
 #include <const.h>
 #include <types.h>
 #include <protect.h>
 #include <proto.h>
 #include <userlib.h>
 
-void taska()
+/* 相当于linux中的进程0 */
+void task0()
 {
-	 char *p = "A";
 	 while(1){
-		  /* print(p); */
-		  /* print("."); */
 		  delay(1);
-		  /* (*p)++; */
+		  /* printf("A"); */
 	 }
 }
-
-void taskb()
+/* 相当于linux中的进程1 */
+void task1()
 {
-	 char *p = "B";
 	 while(1){
-		  /* print(p); */
-		  /* print("."); */
 		  delay(1);
-		  read_keyboard();
+		  /* read_keyboard(); */
 	 }
 }

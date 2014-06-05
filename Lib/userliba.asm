@@ -1,18 +1,5 @@
-;;; userliba.asm   (c) weiforrest
+;;; userliba.asm   (c) weipforrest
 		
-global print
-
-print:
-		push ebp
-		mov ebp, esp
-		
-		mov eax, 2
-		mov dword ebx, [ebp + 8]
-		int 0x80
-
-		pop ebp
-		ret
-
 global get_ticks
 get_ticks:
 		push ebp
@@ -22,11 +9,12 @@ get_ticks:
 		pop ebp
 		ret
 
-global read_keyboard
-read_keyboard:	
+global write
+write:	
 		push ebp
 		mov ebp,esp
-		mov eax, 3
+		mov ebx, [ebp + 8]
+		mov eax, 2
 		int 0x80
 		pop ebp
 		ret

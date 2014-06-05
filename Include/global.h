@@ -4,7 +4,7 @@
 #include <types.h>
 #include <protect.h>
 #include <task.h>
-
+#include <tty.h>
 
 #ifdef GLOBAL_VARIABLES_HERE
 #undef EXTERN
@@ -24,4 +24,9 @@ extern reserved_int_handler reserved_int_table[RESERVED_INT_SIZE];
 EXTERN PROC proc_table[PROC_SIZE];
 EXTERN u32 ticks;
 extern int_handler sys_call_table[SYS_CALL_SIZE];
+
+EXTERN CONSOLE console_table[CONSOLE_SIZE];
+EXTERN TTY tty_table[TTY_SIZE];
+EXTERN int nr_current_console;
+
 #endif	/* __OSCRATCH_GLOBAL_H_ */

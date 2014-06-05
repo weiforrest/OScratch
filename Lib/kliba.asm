@@ -3,55 +3,6 @@
 extern disp_pos
 [SECTION .text]
 
-global disp_color_str
-
-;;; void disp_color_str(char *, int)
-disp_color_str:
-		push ebp
-		mov ebp, esp
-
-		push gs
-		push esi
-		push edi
-
-		mov ax, SELECTOR_KERNEL_GS
-		mov gs, ax
-		
-		mov esi, [ebp + 8]		;
-		mov edi, [disp_pos]
-		mov ah, [ebp + 12]
-.1:
-		lodsb
-		test al, al
-		jz .done
-		cmp al, 0xa				;is enter key
-		jnz .2
-		push eax
-		push ebx
-		mov eax, edi
-		mov bl, 160
-		div bl
-		and eax, 0xff
-		inc eax
-		mov bl, 160
-		mul bl
-		mov edi, eax
-		pop ebx
-		pop eax
-		jmp .1
-.2:
-		mov word [gs:edi], ax
-		add edi, 2
-		jmp .1
-.done:
-		mov dword [disp_pos], edi
-
-		pop edi
-		pop esi
-		pop gs
-		pop ebp
-		ret
-
 global itoa		
 ;;; char * itoa(char *, int)
 itoa:

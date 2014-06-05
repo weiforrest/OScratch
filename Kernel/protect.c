@@ -10,9 +10,8 @@
 
 void spurious_irq(int irq)
 {
-	 disp_str("recvice irq: ");
-	 disp_int(irq);
-	 disp_str("\n");
+	 printk("recvice irq: ");
+	 printk("%x\n", irq);
 }
 
 

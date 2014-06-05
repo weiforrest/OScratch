@@ -16,6 +16,10 @@
 /* THE FIRST aviliable GDT ENTRY */
 #define FIRST_GDT_ENTRY 4
 
+/*  */
+#define CONSOLE_SIZE 3			/* 暂时不能超过8个,每个的显存大小为4k */
+#define TTY_SIZE CONSOLE_SIZE
+
 /* max proc size */
 #define PROC_SIZE 64
 #define PAGE_SIZE 4096
@@ -44,4 +48,10 @@
 /* LDT selector */
 #define SELECTOR_LDT_CS 0x7
 #define SELECTOR_LDT_DS 0xf
+
+/* color */
+#define DEFAULT_COLOR 0x07 		/* 白底黑字 */
+#define GRAY_RED 0x74				/* 灰底红字 */
+
+#define SCREEN_WIDTH 80
 #endif /*__OSCRATCH_CONST_H_*/

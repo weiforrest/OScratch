@@ -27,11 +27,13 @@ BOOT_OBJ	= $(BOOT) $(LOAD)
 KERNEL		= kernel.bin
 KERNEL_STRIP= kernel.bin.stripped
 # TODO: reorginaze the file
-LIB_OBJ = Lib/string.o Lib/klib.o Lib/kliba.o Lib/userliba.o Lib/userlib.o
+LIB_OBJ = Lib/stringa.o Lib/klib.o Lib/kliba.o Lib/userliba.o Lib/userlib.o\
+		Lib/string.o
 KERNEL_OBJ = Kernel/kernel.o Kernel/start.o Kernel/i8259a.o \
 				Kernel/protect.o Kernel/global.o Kernel/interrupta.o \
 				Kernel/task.o Kernel/sched.o Kernel/interrupt.o \
 				Kernel/syscall.o Kernel/keyboard.o Kernel/console.o\
+				Kernel/tty.o Kernel/printk.o Kernel/vsprintf.o \
 				$(LIB_OBJ)
 
 IMGNAME		= a.img
@@ -86,28 +88,28 @@ $(KERNEL): $(KERNEL_OBJ)
 	$(LD) $(KLDFLAGS) $@ $^
 
 # .c to .o
-Kernel/start.o:	Include/const.h Include/types.h Include/proto.h \
-		Include/protect.h Include/global.h
+# Kernel/start.o:	Include/const.h Include/types.h Include/proto.h \
+#		Include/protect.h Include/global.h
 
-Kernel/i8259a.o: Include/const.h Include/types.h Include/proto.h \
-		Include/protect.h Include/global.h
+# Kernel/i8259a.o: Include/const.h Include/types.h Include/proto.h \
+#		Include/protect.h Include/global.h
 
-Kernel/protect.o: Include/const.h Include/types.h Include/proto.h \
-			Include/protect.h Include/global.h
+# Kernel/protect.o: Include/const.h Include/types.h Include/proto.h \
+#			Include/protect.h Include/global.h
 
-Kernel/global.o: Include/const.h Include/types.h Include/protect.h\
-			Include/global.h
+# Kernel/global.o: Include/const.h Include/types.h Include/protect.h\
+#			Include/global.h
 
-Kernel/task.o:	Include/const.h Include/types.h Include/proto.h\
-			Include/protect.h Include/userlib.h
+# Kernel/task.o:	Include/const.h Include/types.h Include/proto.h\
+#			Include/protect.h Include/userlib.h
 
-Kernel/sched.o: Include/const.h Include/proto.h Include/global.h
+# Kernel/sched.o: Include/const.h Include/proto.h Include/global.h
 
-Kernel/interrupt.o: Include/const.h Include/types.h Include/interrupt.h
+# Kernel/interrupt.o: Include/const.h Include/types.h Include/interrupt.h
 
-Lib/klib.o:  Include/proto.h
+# Lib/klib.o:  Include/proto.h
 
-Lib/userlib.o: Include/proto.h Include/userlib.h
+# Lib/userlib.o: Include/proto.h Include/userlib.h
 
 # .asm to .o
 Kernel/kernel.o: Kernel/kernel.asm
@@ -119,7 +121,7 @@ Kernel/interrupta.o: Kernel/interrupt.asm
 Kernel/syscall.o: Kernel/syscall.asm
 	$(ASM) $(KASMFLAGS) $@ $<
 
-Lib/string.o: Lib/string.asm
+Lib/stringa.o: Lib/string.asm
 	$(ASM) $(KASMFLAGS) $@ $<
 
 Lib/userliba.o: Lib/userliba.asm

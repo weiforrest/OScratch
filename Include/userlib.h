@@ -6,10 +6,9 @@
 #include <types.h>
 
 
-u32 print(char *);
-u32 print_int(int);
+
 u32 get_ticks();
-void read_keyboard();
+int write(char *);
 
 
 

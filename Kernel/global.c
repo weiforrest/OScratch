@@ -10,6 +10,5 @@ void keyboard_read();
 int_handler sys_call_table[SYS_CALL_SIZE]={
 	 0,
 	 sys_get_ticks,
-	 sys_disp,
-	 keyboard_read				/* TODO 暂时放在这里, */
+	 sys_write
 };

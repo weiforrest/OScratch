@@ -14,13 +14,12 @@ struct proc_struct{
 	 u32 counter;
 	 u32 pid;
 	 u8 name[16];
+	 u32 nr_tty;				/* 使用的tty */
 };
 
 typedef union{
 	 struct proc_struct proc;
 	 char stack[PAGE_SIZE];
 }PROC;
-
-
 
 #endif	/* __OSCRATCH_TASK_H_ */

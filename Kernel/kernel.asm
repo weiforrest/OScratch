@@ -28,7 +28,6 @@ global restart_reenter
 
 _start:							;the gcc ld default use to be program entry
 		mov esp, StackTop
-		mov dword [disp_pos], 0
 		sgdt	[gdt_ptr]
 		call cstart
 		lgdt	[gdt_ptr]

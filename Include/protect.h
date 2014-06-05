@@ -86,12 +86,13 @@ __asm__ volatile ("inb %%dx,%%al\n"				\
 				  "nop\n"								\
 				  :"=a"(_v):"d"(port));					\
 _v;})
-
+/* save current interrupt state */
 #define ENABLE_INT()\
-	 __asm__ volatile ("sti"\
+	 __asm__ volatile ("popf\n"\
 					   ::)
 #define DISABLE_INT()\
-	 __asm__ volatile ("cli"\
+	 __asm__ volatile ("pushf\n"	\
+					   "cli\n"		\
 					   ::)
 
 

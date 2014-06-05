@@ -10,10 +10,9 @@
 void setup_proc();
 void setup_sched();
 void setup_keyboard();
+void setup_tty();
 void cstart()
 {
-	 disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-			  "-----\"cstart\" begins-----\n");
 	 /* copy the GDT */
 	 memcpy(gdt, (void *)(*((u32 *)(&gdt_ptr[2]))), *((u16*)(gdt_ptr))+1);
 	 u16 * p_gdt_limit = (u16 *)gdt_ptr;
@@ -28,7 +27,6 @@ void cstart()
 	 *p_idt_limit = IDT_SIZE * sizeof(GATE) - 1;
 	 *p_idt_base = (u32)&idt;
 	 init_idt();
-	 
 	 /* setup the TSS descriptor int gdt */
 	 init_desc(&gdt[enable_gdt_entry++], (u32)&tss,
 			   sizeof(TSS) - 1, DA_386TSS);
@@ -37,9 +35,7 @@ void cstart()
 	 init_tss();
 	 setup_sched();
 	 setup_keyboard();
-	 setup_console();
-	 
-	 disp_str("-----\"cstart\" ends-----\n");
+	 setup_tty();
 }
 
 void setup_proc()
@@ -56,19 +52,23 @@ void setup_proc()
 		  init_desc(&gdt[enable_gdt_entry++], (u32)&p_proc_ready->proc.ldt,
 					sizeof(DESCRIPTOR)*3 - 1, DA_LDT);
 		  /* init the ldt cs*/
-		  memcpy(&p_proc_ready->proc.ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
+		  memcpy(&p_proc_ready->proc.ldt[0], &gdt[SELECTOR_KERNEL_CS >> 3],
+				 sizeof(DESCRIPTOR));
 		  p_proc_ready->proc.ldt[0].attr |= PRIVILEGE_USER << 5;
 		  /* init the ldt ds */
-		  memcpy(&p_proc_ready->proc.ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3], sizeof(DESCRIPTOR));
+		  memcpy(&p_proc_ready->proc.ldt[1], &gdt[SELECTOR_KERNEL_DS >> 3],
+				 sizeof(DESCRIPTOR));
 		  p_proc_ready->proc.ldt[1].attr |= PRIVILEGE_USER << 5;
 		  p_proc_ready->proc.regs.gs = SELECTOR_LDT_DS;
 		  p_proc_ready->proc.regs.fs = SELECTOR_LDT_DS;
 		  p_proc_ready->proc.regs.es = SELECTOR_LDT_DS;
 		  p_proc_ready->proc.regs.ds = SELECTOR_LDT_DS;
 		  if(!i){
-			   p_proc_ready->proc.regs.eip = (u32)taska;
+			   p_proc_ready->proc.regs.eip = (u32)task0;
+			   p_proc_ready->proc.nr_tty = 0;
 		  }else{
-			   p_proc_ready->proc.regs.eip = (u32)taskb;
+			   p_proc_ready->proc.regs.eip = (u32)task1;
+			   p_proc_ready->proc.nr_tty = 1;
 		  }
 		  p_proc_ready->proc.regs.cs = SELECTOR_LDT_CS;
 		  p_proc_ready->proc.regs.eflags = 0x202;

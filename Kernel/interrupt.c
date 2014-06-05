@@ -93,27 +93,27 @@ static void die(char *msg, u32 esp, u32 error)
 	 disp_pos = 0;
 	 int i;
 	 for(i=0;i<80*5;i++){
-		  disp_str(" ");
+		  printk(" ");
 	 }
 	 disp_pos = 0;
-	 disp_color_str(msg, 0x74);	/* 辉底红字 */
+	 printk(msg);	/* 辉底红字 */
 	 if(error){
-		  disp_color_str(" ERRORCODE: ", 0x74);
-		  disp_int(error & 0xffff);
+		  printk(" ERRORCODE: ");
+		  printk("%x",error & 0xffff);
 	 }
-	 disp_color_str(" CS:", 0x74);
-	 disp_int(pesp[1]);
-	 disp_color_str("EIP: ", 0x74);
-	 disp_int(pesp[0]);
-	 disp_color_str("EFLAGS: ", 0x74);
-	 disp_int(pesp[2]);
+	 printk(" CS:");
+	 printk("%x", pesp[1]);
+	 printk("EIP: ");
+	 printk("%x", pesp[0]);
+	 printk("EFLAGS: ");
+	 printk("%x", pesp[2]);
 	 if(pesp[1] != SELECTOR_KERNEL_CS ){
-		  disp_color_str("SS: ", 0x74);
-		  disp_int(pesp[4]);
-		  disp_color_str("ESP: ", 0x74);
-		  disp_int(pesp[3]);
+		  printk("SS: ");
+		  printk("%x",pesp[4]);
+		  printk("ESP: ");
+		  printk("%x",pesp[3]);
 	 }else{
-		  disp_color_str("IN kernel occur", 0x74);
+		  printk("IN kernel occur");
 	 }
 	 hlt();
 }

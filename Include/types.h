@@ -7,5 +7,6 @@ typedef unsigned int u32;
 
 typedef void (*int_handler) ();
 typedef void (*reserved_int_handler)(u32, u32);
+typedef char * va_list;
 
 #endif	/* __OSCRATCH_TYPES_H_ */

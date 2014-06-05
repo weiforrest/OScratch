@@ -20,8 +20,11 @@ systemcall:
 		mov edi, [eax + 16]
 		pop eax
 		
+		push dword [p_proc_ready]
 		sti
+		push ebx
 		call [sys_call_table + eax * 4]
+		add esp, 4*3
 		cli
 		;; 修改返回值eax
 		pop edi
@@ -30,19 +33,9 @@ systemcall:
 		ret
 
 extern ticks
-extern disp_color_str
+
 global sys_get_ticks
 sys_get_ticks:
 		mov eax, [ticks]
-		ret
-
-
-		
-global sys_disp
-sys_disp:
-		push 0xf
-		push ebx
-		call disp_color_str
-		add esp, 8
 		ret
 
