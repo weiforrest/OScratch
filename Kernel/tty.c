@@ -46,7 +46,7 @@ void tty_do_write(TTY * p_tty, u32 key)
 	 }
 	 char out[2]={0,0};
 	 out[0] = keymap[(key & 0x7f) * MAP_COLS];
-	 console_print(p_tty->p_console, out);
+	 console_print(p_tty->p_console, out); /* 回显当前按键字符 */
 	 
 }
 
